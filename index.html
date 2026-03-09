@@ -419,16 +419,18 @@ body::before {
   cursor: pointer; transition: all 0.2s; margin-bottom: 14px; position: relative;
 }
 .cm-drop:hover, .cm-drop.has-file { border-color: var(--gold-dim); background: rgba(200,160,48,0.03); }
-.cm-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.cm-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 1; }
 .cm-drop-icon { font-size: 28px; margin-bottom: 6px; }
 .cm-drop-text { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
 .cm-reward { text-align: center; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); margin-bottom: 14px; text-transform: uppercase; }
 .cm-submit {
   width: 100%; padding: 13px; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700;
   letter-spacing: 5px; text-transform: uppercase; border: none; cursor: pointer;
-  transition: all 0.2s; opacity: 0.35; pointer-events: none;
+  transition: all 0.2s; opacity: 0.35;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
-.cm-submit.ready { opacity: 1; pointer-events: all; }
+.cm-submit.ready { opacity: 1; }
 .fox-m .cm-submit { background: var(--fox-primary); color: #000; }
 .fox-m .cm-submit.ready:hover { background: var(--fox-bright); }
 .forest-m .cm-submit { background: var(--forest-primary); color: #000; }
@@ -1332,8 +1334,6 @@ body::before {
   </div>
 </div>
 
-<!-- MUSIC -->
-<div id="music-btn" onclick="toggleMusic()" title="Toggle Music" style="position:fixed;bottom:24px;right:20px;z-index:300;width:44px;height:44px;border-radius:50%;background:var(--panel2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;box-shadow:0 4px 16px rgba(0,0,0,0.5);transition:all 0.2s;" onmouseover="this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.borderColor='var(--border2)'">🔇</div>
 <div class="modal-overlay" id="level-modal">
   <div class="modal">
     <div class="modal-bar" id="lm-bar"></div>
@@ -1376,7 +1376,7 @@ body::before {
         <div class="cm-drop-text">Tap to photograph your completed quest</div>
       </div>
       <div class="cm-reward" id="cm-reward"></div>
-      <button class="cm-submit" id="cm-submit" onclick="submitBounty()">⚡ Submit for Approval</button>
+      <button class="cm-submit" id="cm-submit" onclick="submitBounty()" ontouchend="event.preventDefault();submitBounty()">⚡ Submit for Approval</button>
     </div>
   </div>
 </div>
@@ -1622,7 +1622,9 @@ function enterBoard(p) {
 
 
 function renderBoard() {
-  const p = curP, xp = S[p].xp||0, bal = S[p].balance||0;
+  if (!S.subs)    S.subs    = [];
+  if (!S.bounties) S.bounties = [];
+  const p = curP, xp = S[p]?.xp||0, bal = S[p]?.balance||0;
   document.getElementById('bpts').textContent = xp.toLocaleString() + ' XP';
   document.getElementById('bmoney').textContent = bal.toLocaleString() + ' pts';
   const grid = document.getElementById('bounty-grid');
@@ -1692,6 +1694,8 @@ function handleProof(input) {
 }
 
 function submitBounty() {
+  const btn = document.getElementById('cm-submit');
+  if (!btn.classList.contains('ready')) return;
   if (!curPhoto) return;
   const b = S.bounties.find(x => x.id === curBid); if (!b) return;
   S.subs.push({ id:'sub_'+Date.now(), bountyId:curBid, bountyTitle:b.title, player:curP, photo:curPhoto, pts:b.pts, xpOnly:b.xpOnly||false, status:'pending', time:new Date().toISOString() });
@@ -2262,76 +2266,6 @@ function openLevelModal(p) {
   }).join('');
 
   document.getElementById('level-modal').classList.add('active');
-}
-
-// ============================================================
-//  MUSIC — Heroic chiptune-style soundtrack via Web Audio API
-// ============================================================
-let audioCtx = null;
-let musicPlaying = false;
-let musicNodes = [];
-let musicTimeout = null;
-
-const MELODY = [
-  // Heroic fanfare loop — C major pentatonic
-  {n:'E4',d:0.25},{n:'G4',d:0.25},{n:'A4',d:0.25},{n:'C5',d:0.5},
-  {n:'A4',d:0.25},{n:'G4',d:0.25},{n:'E4',d:0.5},
-  {n:'D4',d:0.25},{n:'F4',d:0.25},{n:'G4',d:0.25},{n:'A4',d:0.5},
-  {n:'G4',d:0.25},{n:'E4',d:0.25},{n:'C4',d:0.75},
-  {n:'E4',d:0.25},{n:'G4',d:0.25},{n:'B4',d:0.25},{n:'G5',d:0.5},
-  {n:'E5',d:0.25},{n:'D5',d:0.25},{n:'C5',d:0.5},
-  {n:'B4',d:0.25},{n:'A4',d:0.25},{n:'G4',d:0.25},{n:'A4',d:0.25},{n:'B4',d:0.25},
-  {n:'C5',d:1.0},
-];
-
-const NOTE_FREQ = {
-  'C3':130.81,'D3':146.83,'E3':164.81,'F3':174.61,'G3':196,'A3':220,'B3':246.94,
-  'C4':261.63,'D4':293.66,'E4':329.63,'F4':349.23,'G4':392,'A4':440,'B4':493.88,
-  'C5':523.25,'D5':587.33,'E5':659.25,'F5':698.46,'G5':783.99,'A5':880,'B5':987.77,
-};
-
-function playNote(freq, when, duration, vol=0.12) {
-  if(!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = 'square';
-  osc.frequency.setValueAtTime(freq, when);
-  gain.gain.setValueAtTime(0, when);
-  gain.gain.linearRampToValueAtTime(vol, when + 0.02);
-  gain.gain.setValueAtTime(vol, when + duration * 0.7);
-  gain.gain.linearRampToValueAtTime(0, when + duration * 0.95);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start(when);
-  osc.stop(when + duration);
-  musicNodes.push(osc);
-}
-
-function scheduleLoop() {
-  if(!musicPlaying || !audioCtx) return;
-  const BPM = 108;
-  const beat = 60 / BPM;
-  let t = audioCtx.currentTime + 0.05;
-  MELODY.forEach(note => {
-    playNote(NOTE_FREQ[note.n]||440, t, note.d * beat);
-    // simple bass — root note 2 octaves down every beat
-    t += note.d * beat;
-  });
-  const loopDuration = MELODY.reduce((s,n)=>s+n.d,0) * beat * 1000;
-  musicTimeout = setTimeout(scheduleLoop, loopDuration - 200);
-}
-
-function toggleMusic() {
-  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-  musicPlaying = !musicPlaying;
-  document.getElementById('music-btn').textContent = musicPlaying ? '🔊' : '🔇';
-  if(musicPlaying) {
-    scheduleLoop();
-  } else {
-    if(musicTimeout) clearTimeout(musicTimeout);
-    musicNodes.forEach(n=>{ try{n.stop();}catch(e){} });
-    musicNodes = [];
-  }
 }
 
 init();
