@@ -1469,9 +1469,13 @@ function initFirebase() {
         if (!S.recurring)       S.recurring = [];
         if (!S.customTemplates) S.customTemplates = [];
         if (!S.pin)             S.pin = '1234';
+        if (!S.subs)            S.subs = [];
+        if (!S.bounties)        S.bounties = [];
+        if (!S.history)         S.history = [];
         PIN = S.pin;
         // Migrate old data: if xp/balance missing, seed from pts
         ['fox','forest'].forEach(p => {
+          if (!S[p]) S[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
           if (S[p].xp === undefined)      S[p].xp      = S[p].pts || 0;
           if (S[p].balance === undefined) S[p].balance  = S[p].pts || 0;
         });
@@ -1514,8 +1518,12 @@ function fallbackToLocal() {
   if (!S.recurring)       S.recurring = [];
   if (!S.customTemplates) S.customTemplates = [];
   if (!S.pin)             S.pin = '1234';
+  if (!S.subs)            S.subs = [];
+  if (!S.bounties)        S.bounties = [];
+  if (!S.history)         S.history = [];
   PIN = S.pin;
   ['fox','forest'].forEach(p => {
+    if (!S[p]) S[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
     if (S[p].xp === undefined)      S[p].xp      = S[p].pts || 0;
     if (S[p].balance === undefined) S[p].balance  = S[p].pts || 0;
   });
