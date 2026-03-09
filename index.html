@@ -397,7 +397,7 @@ body::before {
 .modal-overlay.active { display: flex; }
 .modal {
   background: var(--panel); border: 1px solid var(--border2);
-  width: 100%; max-width: 450px; max-height: 90vh; overflow-y: scroll; -webkit-overflow-scrolling: touch;
+  width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto;
   animation: modalIn 0.22s ease both; box-shadow: 0 24px 60px rgba(0,0,0,0.6);
 }
 @keyframes modalIn { from{transform:scale(0.94) translateY(14px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
@@ -1388,9 +1388,9 @@ body::before {
       <input type="file" id="cm-file" accept="image/*" capture="environment" onchange="handleProof(this)" style="display:none;">
       <!-- Step 2: Submit button — completely independent, no state classes -->
       <div id="cm-submit-wrap" style="display:none;">
-        <div onclick="submitBounty()" style="width:100%;padding:18px;text-align:center;font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:5px;text-transform:uppercase;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;" id="cm-submit" class="cm-submit ready">
+        <a href="javascript:void(0)" onclick="submitBounty()" id="cm-submit" class="cm-submit ready" style="display:block;width:100%;padding:18px;text-align:center;font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:5px;text-transform:uppercase;text-decoration:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;box-sizing:border-box;">
           ⚡ Submit for Approval
-        </div>
+        </a>
       </div>
     </div>
   </div>
@@ -1422,7 +1422,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v6</div>
+<div class="version-tag">v7</div>
 
 <script>
 // ============================================================
@@ -1715,8 +1715,12 @@ function handleProof(input) {
     document.getElementById('cm-photo-btn').textContent = '📷 Retake Photo';
     document.getElementById('cm-photo-btn').style.borderColor = 'var(--gold-dim)';
     document.getElementById('cm-photo-btn').style.color = 'var(--gold)';
-    // Show submit — fully visible, no class tricks
-    document.getElementById('cm-submit-wrap').style.display = 'block';
+    // Show submit
+    const wrap = document.getElementById('cm-submit-wrap');
+    wrap.style.display = 'block';
+    // Belt-and-suspenders: attach touchstart directly for iPad
+    const btn = document.getElementById('cm-submit');
+    btn.ontouchstart = function(ev) { ev.preventDefault(); submitBounty(); };
   };
   r.readAsDataURL(file);
 }
