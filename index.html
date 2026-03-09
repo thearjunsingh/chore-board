@@ -1422,7 +1422,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v9</div>
+<div class="version-tag">v10</div>
 
 <script>
 // ============================================================
@@ -1501,7 +1501,7 @@ function initFirebase() {
         S.bounties = DEFAULTS;
         S.pin = '1234';
         PIN = '1234';
-        pushToFirebase();
+        stateRef.set(S);
       }
       processRecurring();
       restoreAvatars();
@@ -1560,16 +1560,18 @@ function hideLoading() {
 
 // Debounced save — batches rapid changes into one write
 function save() {
-  // Always mirror to localStorage as offline backup
-  localStorage.setItem('hbb_v2', JSON.stringify(S));
-  // Debounce Firebase writes (300ms) to avoid hammering on rapid changes
-  if (saveTimeout) clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(pushToFirebase, 300);
-}
-
-function pushToFirebase() {
-  if (!stateRef) return;
-  stateRef.set(S).catch(err => console.warn('Firebase write failed:', err));
+  // Save to Firebase (full data including photos)
+  if (typeof db !== 'undefined') {
+    try { db.ref('state').set(S); } catch(e) { console.warn('Firebase save failed:', e); }
+  }
+  // Mirror to localStorage as offline backup — but strip photos to avoid quota exceeded
+  try {
+    const slim = JSON.parse(JSON.stringify(S));
+    if (slim.subs) slim.subs = slim.subs.map(s => ({...s, photo: ''}));
+    localStorage.setItem('hbb_v2', JSON.stringify(slim));
+  } catch(e) {
+    console.warn('localStorage save failed:', e);
+  }
 }
 
 function init() {
