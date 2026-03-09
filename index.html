@@ -416,10 +416,11 @@ body::before {
 .cm-preview { width: 100%; max-height: 180px; object-fit: contain; display: none; margin-bottom: 12px; border: 1px solid var(--border2); }
 .cm-drop {
   border: 1px dashed var(--border2); padding: 26px 18px; text-align: center;
-  cursor: pointer; transition: all 0.2s; margin-bottom: 14px; position: relative;
+  cursor: pointer; transition: all 0.2s; margin-bottom: 14px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .cm-drop:hover, .cm-drop.has-file { border-color: var(--gold-dim); background: rgba(200,160,48,0.03); }
-.cm-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 1; }
 .cm-drop-icon { font-size: 28px; margin-bottom: 6px; }
 .cm-drop-text { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
 .cm-reward { text-align: center; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); margin-bottom: 14px; text-transform: uppercase; }
@@ -429,6 +430,7 @@ body::before {
   transition: all 0.2s; opacity: 0.35;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  position: relative; z-index: 5;
 }
 .cm-submit.ready { opacity: 1; }
 .fox-m .cm-submit { background: var(--fox-primary); color: #000; }
@@ -1370,13 +1372,14 @@ body::before {
       <div class="cm-bdesc" id="cm-desc"></div>
       <div class="cm-section-lbl">✦ Submit Your Proof Photo</div>
       <img class="cm-preview" id="cm-prev" src="" alt="">
-      <div class="cm-drop" id="cm-drop">
-        <input type="file" accept="image/*" capture="environment" id="cm-file" onchange="handleProof(this)">
+      <!-- File input completely outside the drop zone, triggered by button -->
+      <input type="file" accept="image/*" capture="environment" id="cm-file" onchange="handleProof(this)" style="display:none;position:static;width:0;height:0;opacity:0;">
+      <div class="cm-drop" id="cm-drop" onclick="document.getElementById('cm-file').click()">
         <div class="cm-drop-icon">📷</div>
         <div class="cm-drop-text">Tap to photograph your completed quest</div>
       </div>
       <div class="cm-reward" id="cm-reward"></div>
-      <button class="cm-submit" id="cm-submit" onclick="submitBounty()" ontouchend="event.preventDefault();submitBounty()">⚡ Submit for Approval</button>
+      <button class="cm-submit" id="cm-submit" onclick="submitBounty()">⚡ Submit for Approval</button>
     </div>
   </div>
 </div>
