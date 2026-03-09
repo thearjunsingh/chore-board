@@ -870,6 +870,28 @@ body::before {
 .empty-ico { font-size: 38px; margin-bottom: 10px; }
 .empty-txt { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; }
 
+/* XP-only badge on bounty cards */
+.xp-only-badge {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 3px 8px; background: rgba(100,60,200,0.85);
+  color: #d4b8ff; border: 1px solid rgba(160,100,255,0.5);
+}
+.xp-only-pts { color: #b090ff !important; font-size: 16px !important; }
+
+/* Template library action buttons */
+.tpl-card-actions {
+  display: flex; gap: 4px; margin-top: 8px; justify-content: flex-end;
+}
+.tpl-act-btn {
+  background: none; border: 1px solid var(--border2); color: var(--text-dim);
+  font-size: 12px; padding: 3px 7px; cursor: pointer; border-radius: 2px;
+  transition: all 0.15s; line-height: 1;
+}
+.tpl-act-btn:hover { border-color: var(--gold-dim); background: rgba(200,160,48,0.08); }
+.tpl-act-btn.del:hover { border-color: var(--red); background: rgba(204,48,32,0.08); }
+
 @keyframes fadeDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
@@ -1131,8 +1153,8 @@ body::before {
       <div class="board-psub">Active Quests</div>
     </div>
     <div class="hdr-score">
-      <div class="hdr-pts" id="bpts">0 pts</div>
-      <div class="hdr-money" id="bmoney">$0.00</div>
+      <div class="hdr-pts" id="bpts">0 XP</div>
+      <div class="hdr-money" id="bmoney">0 pts</div>
     </div>
   </div>
   <div class="bounty-grid" id="bounty-grid"></div>
@@ -1162,8 +1184,24 @@ body::before {
     </div>
     <div class="tab-pane" id="pane-scores">
       <div class="score-grid">
-        <div class="score-box fox"><div class="sb-name">🟢 Fox</div><div class="sb-pts" id="s-fox-pts">0</div><div class="sb-money" id="s-fox-money">$0.00</div><div class="sb-lbl">Total Gold</div></div>
-        <div class="score-box forest"><div class="sb-name">🟠 Forest</div><div class="sb-pts" id="s-forest-pts">0</div><div class="sb-money" id="s-forest-money">$0.00</div><div class="sb-lbl">Total Gold</div></div>
+        <div class="score-box fox">
+          <div class="sb-name">🟢 Fox</div>
+          <div class="sb-pts" id="s-fox-pts">0</div>
+          <div class="sb-lbl">Spendable Points</div>
+          <div class="sb-money" id="s-fox-money">$0.00</div>
+          <div class="sb-lbl" style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">Total XP</div>
+          <div style="font-family:'Cinzel Decorative',serif;font-size:20px;color:var(--fox-bright);" id="s-fox-xp">0</div>
+          <button class="post-btn" style="margin-top:12px;background:var(--fox-dark);color:var(--fox-bright);font-size:9px;padding:8px;" onclick="payOut('fox')">💰 Pay Out Fox</button>
+        </div>
+        <div class="score-box forest">
+          <div class="sb-name">🟠 Forest</div>
+          <div class="sb-pts" id="s-forest-pts">0</div>
+          <div class="sb-lbl">Spendable Points</div>
+          <div class="sb-money" id="s-forest-money">$0.00</div>
+          <div class="sb-lbl" style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">Total XP</div>
+          <div style="font-family:'Cinzel Decorative',serif;font-size:20px;color:var(--forest-bright);" id="s-forest-xp">0</div>
+          <button class="post-btn" style="margin-top:12px;background:var(--forest-dark);color:var(--forest-bright);font-size:9px;padding:8px;" onclick="payOut('forest')">💰 Pay Out Forest</button>
+        </div>
       </div>
       <div class="reset-row">
         <button class="rst-btn" onclick="resetScores('fox')">Reset Fox</button>
@@ -1261,13 +1299,41 @@ body::before {
           <input type="checkbox" id="save-to-lib" style="width:16px;height:16px;accent-color:var(--gold)">
           <label for="save-to-lib" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">Also save to template library</label>
         </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 10px">
+          <input type="checkbox" id="new-xp-only" style="width:16px;height:16px;accent-color:var(--gold)">
+          <label for="new-xp-only" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ XP Only (no point payout)</label>
+        </div>
         <button class="post-btn" onclick="addBounty()">⚔️ Post Quest</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- LEVEL PROGRESSION MODAL -->
+<!-- TEMPLATE EDIT MODAL -->
+<div class="modal-overlay" id="tpl-edit-modal">
+  <div class="modal">
+    <div class="modal-bar" style="background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)"></div>
+    <div class="modal-head"><div class="modal-htitle">✏️ Edit Template</div><button class="modal-x" onclick="closeModal('tpl-edit-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="etpl-id">
+      <div class="form-group"><label class="form-lbl">Title</label><input class="f-input" id="etpl-title" type="text"></div>
+      <div class="form-group"><label class="form-lbl">Description</label><textarea class="f-textarea" id="etpl-desc" style="min-height:70px"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-lbl">Points</label><input class="f-input" id="etpl-pts" type="number" min="10" step="10"></div>
+        <div class="form-group"><label class="form-lbl">Difficulty</label><select class="f-select" id="etpl-diff"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-lbl">Icon (Emoji)</label><input class="f-input" id="etpl-emoji" type="text" maxlength="4"></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
+        <input type="checkbox" id="etpl-xponly" style="width:16px;height:16px;accent-color:var(--gold)">
+        <label for="etpl-xponly" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ XP Only (no point payout)</label>
+      </div>
+      <button class="post-btn" onclick="saveTemplateEdit()">✦ Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- MUSIC -->
+<div id="music-btn" onclick="toggleMusic()" title="Toggle Music" style="position:fixed;bottom:24px;right:20px;z-index:300;width:44px;height:44px;border-radius:50%;background:var(--panel2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;box-shadow:0 4px 16px rgba(0,0,0,0.5);transition:all 0.2s;" onmouseover="this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.borderColor='var(--border2)'">🔇</div>
 <div class="modal-overlay" id="level-modal">
   <div class="modal">
     <div class="modal-bar" id="lm-bar"></div>
@@ -1350,6 +1416,7 @@ body::before {
 const firebaseConfig = {
   apiKey: "AIzaSyDxg6pbdCK7Haey1Eaj_sQJGYtbYrB4vNQ",
   authDomain: "chore-bounty-board.firebaseapp.com",
+  databaseURL: "https://chore-bounty-board-default-rtdb.firebaseio.com",
   projectId: "chore-bounty-board",
   storageBucket: "chore-bounty-board.firebasestorage.app",
   messagingSenderId: "701109747341",
@@ -1368,8 +1435,8 @@ let PIN = '1234'; // loaded from Firebase on start
 const PPD = 100;
 
 let S = {
-  fox:    { pts:0, cleared:0, avatar:'' },
-  forest: { pts:0, cleared:0, avatar:'' },
+  fox:    { pts:0, xp:0, balance:0, cleared:0, avatar:'' },
+  forest: { pts:0, xp:0, balance:0, cleared:0, avatar:'' },
   bounties: [], subs: [], history: [],
   recurring: [], customTemplates: [],
   pin: '1234'
@@ -1390,7 +1457,7 @@ const DEFAULTS = [
 // ============================================================
 function initFirebase() {
   try {
-    firebase.initializeApp(FIREBASE_CONFIG);
+    firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     stateRef = db.ref('state');
 
@@ -1403,6 +1470,11 @@ function initFirebase() {
         if (!S.customTemplates) S.customTemplates = [];
         if (!S.pin)             S.pin = '1234';
         PIN = S.pin;
+        // Migrate old data: if xp/balance missing, seed from pts
+        ['fox','forest'].forEach(p => {
+          if (S[p].xp === undefined)      S[p].xp      = S[p].pts || 0;
+          if (S[p].balance === undefined) S[p].balance  = S[p].pts || 0;
+        });
       } else {
         // First time — write defaults
         S.bounties = DEFAULTS;
@@ -1443,6 +1515,10 @@ function fallbackToLocal() {
   if (!S.customTemplates) S.customTemplates = [];
   if (!S.pin)             S.pin = '1234';
   PIN = S.pin;
+  ['fox','forest'].forEach(p => {
+    if (S[p].xp === undefined)      S[p].xp      = S[p].pts || 0;
+    if (S[p].balance === undefined) S[p].balance  = S[p].pts || 0;
+  });
   processRecurring();
   restoreAvatars();
   updateHome();
@@ -1538,9 +1614,9 @@ function enterBoard(p) {
 
 
 function renderBoard() {
-  const p = curP, pts = S[p].pts;
-  document.getElementById('bpts').textContent = pts.toLocaleString() + ' pts';
-  document.getElementById('bmoney').textContent = '$' + (pts/PPD).toFixed(2);
+  const p = curP, xp = S[p].xp||0, bal = S[p].balance||0;
+  document.getElementById('bpts').textContent = xp.toLocaleString() + ' XP';
+  document.getElementById('bmoney').textContent = bal.toLocaleString() + ' pts';
   const grid = document.getElementById('bounty-grid');
   const list = S.bounties.filter(b => b.player === p && b.active);
   if (!list.length) {
@@ -1554,16 +1630,21 @@ function renderBoard() {
     const cls = done ? 'done' : pend ? 'pend' : '';
     const rib = done ? 'COMPLETE' : pend ? 'PENDING' : '';
     const can = !done && !pend;
+    const isXpOnly = b.xpOnly || false;
+    const rewardLabel = isXpOnly
+      ? `<div class="bc-pts xp-only-pts">✨ XP Only</div><div class="bc-money">no coin reward</div>`
+      : `<div class="bc-pts">${b.pts}</div><div class="bc-money">${b.pts} points</div>`;
     return `<div class="bounty-card ${p} ${cls}" onclick="${can?`openClaim('${b.id}')`:''}" >
       <div class="bc-top"></div>
       <div class="bc-ribbon">${rib}</div>
+      ${isXpOnly ? '<div class="xp-only-badge">⚡ XP Only</div>' : ''}
       <div class="bc-icon">${b.emoji||'⚔️'}</div>
       <div class="bc-body">
         <div class="bc-meta"><span class="diff-tag diff-${b.diff}">${b.diff}</span></div>
         <div class="bc-title">${b.title}</div>
         <div class="bc-desc">${b.desc}</div>
         <div class="bc-footer">
-          <div><div class="bc-pts">${b.pts}</div><div class="bc-money">points · $${(b.pts/PPD).toFixed(2)}</div></div>
+          <div>${rewardLabel}</div>
           ${can?`<button class="claim-btn ${p}" onclick="event.stopPropagation();openClaim('${b.id}')">Claim</button>`:''}
         </div>
       </div>
@@ -1576,7 +1657,10 @@ function openClaim(id) {
   curBid = id; curPhoto = null;
   document.getElementById('cm-title').textContent = b.emoji + ' ' + b.title;
   document.getElementById('cm-desc').textContent = b.desc;
-  document.getElementById('cm-reward').textContent = `✦ Reward: ${b.pts} Points ($${(b.pts/PPD).toFixed(2)})`;
+  const isXpOnly = b.xpOnly || false;
+  document.getElementById('cm-reward').textContent = isXpOnly
+    ? `✦ Reward: ${b.pts} XP (no point payout)`
+    : `✦ Reward: ${b.pts} XP + ${b.pts} Points`;
   document.getElementById('cm-box').className = 'modal ' + curP + '-m';
   document.getElementById('cm-prev').style.display = 'none';
   document.getElementById('cm-prev').src = '';
@@ -1602,7 +1686,7 @@ function handleProof(input) {
 function submitBounty() {
   if (!curPhoto) return;
   const b = S.bounties.find(x => x.id === curBid); if (!b) return;
-  S.subs.push({ id:'sub_'+Date.now(), bountyId:curBid, bountyTitle:b.title, player:curP, photo:curPhoto, pts:b.pts, status:'pending', time:new Date().toISOString() });
+  S.subs.push({ id:'sub_'+Date.now(), bountyId:curBid, bountyTitle:b.title, player:curP, photo:curPhoto, pts:b.pts, xpOnly:b.xpOnly||false, status:'pending', time:new Date().toISOString() });
   save(); closeModal('claim-modal'); renderBoard();
   showNotif('⚡ Quest submitted — awaiting approval!');
   updateBadge();
@@ -1695,7 +1779,7 @@ function renderApprovals() {
       <img class="pend-thumb" src="${s.photo}" onclick="viewPhoto('${s.id}')">
       <div class="pend-info">
         <div class="pend-meta"><span class="p-tag ${s.player}-tag">${s.player}</span><span class="p-name">${s.bountyTitle}</span></div>
-        <div class="p-pts">✦ ${s.pts} pts · $${(s.pts/PPD).toFixed(2)}</div>
+        <div class="p-pts">✦ ${s.pts} XP${s.xpOnly ? ' ⚡ (XP only)' : ' + ' + s.pts + ' pts'}</div>
         <div class="p-time">${new Date(s.time).toLocaleString()}</div>
         <div class="p-actions">
           <button class="app-btn" onclick="approve('${s.id}')">✔ Approve</button>
@@ -1707,10 +1791,15 @@ function renderApprovals() {
 
 function approve(id) {
   const sub = S.subs.find(s=>s.id===id); if (!sub) return;
-  sub.status='approved'; S[sub.player].pts+=sub.pts; S[sub.player].cleared+=1;
-  S.history.unshift({player:sub.player,title:sub.bountyTitle,pts:sub.pts,time:new Date().toISOString()});
+  sub.status='approved';
+  const xpOnly = sub.xpOnly || false;
+  S[sub.player].xp += sub.pts;
+  S[sub.player].pts = S[sub.player].xp; // keep pts in sync with xp for level system
+  if (!xpOnly) S[sub.player].balance += sub.pts;
+  S[sub.player].cleared += 1;
+  S.history.unshift({player:sub.player,title:sub.bountyTitle,pts:sub.pts,xpOnly,time:new Date().toISOString()});
   save(); renderApprovals(); renderScores(); updateBadge(); updateHome();
-  showNotif(`✦ Approved! +${sub.pts} pts for ${sub.player}`);
+  showNotif(`✦ Approved! +${sub.pts} XP for ${sub.player}${xpOnly?' (XP only)':''}`);
 }
 
 function reject(id) {
@@ -1756,18 +1845,18 @@ function addBounty() {
   const diff=document.getElementById('new-diff').value;
   const emoji=document.getElementById('new-emoji').value.trim()||'⚔️';
   const saveLib=document.getElementById('save-to-lib').checked;
+  const xpOnly=document.getElementById('new-xp-only').checked;
   if(!title){showNotif('Enter a quest title');return;}
   if(!desc){showNotif('Enter a description');return;}
-  (player==='both'?['fox','forest']:[player]).forEach(p=>S.bounties.push({id:'b'+Date.now()+'_'+p,player:p,title,desc,pts,diff,emoji,active:true}));
+  (player==='both'?['fox','forest']:[player]).forEach(p=>S.bounties.push({id:'b'+Date.now()+'_'+p,player:p,title,desc,pts,diff,emoji,active:true,xpOnly}));
   if(saveLib) {
-    const cats = ['Morning & Evening','Kitchen','Bedroom','Living Areas','Outdoors','Trash & Laundry','Custom'];
-    const tid = 'tc'+Date.now();
     S.customTemplates = S.customTemplates||[];
-    S.customTemplates.push({id:tid,cat:'Custom',emoji,title,desc,pts,diff});
+    S.customTemplates.push({id:'tc'+Date.now(),cat:'Custom',emoji,title,desc,pts,diff,xpOnly});
   }
   save(); showNotif('⚔️ Quest posted!');
   ['new-title','new-desc','new-pts','new-emoji'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('save-to-lib').checked=false;
+  document.getElementById('new-xp-only').checked=false;
   switchTab('manage'); renderManage();
 }
 
@@ -1788,14 +1877,15 @@ function renderTemplates() {
   const q = (document.getElementById('tpl-search')||{}).value||'';
   const query = q.toLowerCase();
   const all = getAllTemplates();
-  const filtered = query ? all.filter(t=>t.title.toLowerCase().includes(query)||t.desc.toLowerCase().includes(query)||t.cat.toLowerCase().includes(query)) : all;
+  const filtered = query ? all.filter(t=>t.title.toLowerCase().includes(query)||t.desc.toLowerCase().includes(query)||(t.cat||'').toLowerCase().includes(query)) : all;
 
-  // Group by category
   const cats = {};
   filtered.forEach(t=>{ if(!cats[t.cat]) cats[t.cat]=[]; cats[t.cat].push(t); });
 
   const el = document.getElementById('tpl-library');
   if(!filtered.length){ el.innerHTML=`<div class="empty-st"><div class="empty-ico">🔍</div><div class="empty-txt">No matches found</div></div>`; return; }
+
+  const isCustom = id => id.startsWith('tc');
 
   el.innerHTML = Object.entries(cats).map(([cat,items])=>`
     <div class="tpl-category">
@@ -1803,9 +1893,14 @@ function renderTemplates() {
       <div class="tpl-grid">
         ${items.map(t=>`
           <div class="tpl-card ${selectedTemplate&&selectedTemplate.id===t.id?'selected':''}" onclick="selectTemplate('${t.id}')" style="${selectedTemplate&&selectedTemplate.id===t.id?'border-color:var(--gold-dim);background:rgba(200,160,48,0.08)':''}">
-            <div class="tpl-card-pts">${t.pts}</div>
+            <div class="tpl-card-pts">${t.xpOnly?'⚡':t.pts}</div>
             <div class="tpl-card-top"><span class="tpl-card-emoji">${t.emoji}</span><span class="tpl-card-name">${t.title}</span></div>
-            <div class="tpl-card-meta">${t.diff} · ${t.pts} pts</div>
+            <div class="tpl-card-meta">${t.diff} · ${t.xpOnly?'XP only':t.pts+' pts'}</div>
+            ${isCustom(t.id) ? `<div class="tpl-card-actions" onclick="event.stopPropagation()">
+              <button class="tpl-act-btn" onclick="editTemplate('${t.id}')">✏️</button>
+              <button class="tpl-act-btn" onclick="dupeTemplate('${t.id}')">📋</button>
+              <button class="tpl-act-btn del" onclick="deleteTemplate('${t.id}')">🗑️</button>
+            </div>` : ''}
           </div>`).join('')}
       </div>
     </div>`).join('');
@@ -1824,6 +1919,50 @@ function selectTemplate(id) {
 function clearTplBar() {
   selectedTemplate=null;
   document.getElementById('tpl-post-bar').classList.remove('visible');
+}
+
+function editTemplate(id) {
+  const t = S.customTemplates.find(x=>x.id===id); if(!t) return;
+  // populate edit modal
+  document.getElementById('etpl-id').value = t.id;
+  document.getElementById('etpl-title').value = t.title;
+  document.getElementById('etpl-desc').value = t.desc||'';
+  document.getElementById('etpl-pts').value = t.pts||100;
+  document.getElementById('etpl-diff').value = t.diff||'easy';
+  document.getElementById('etpl-emoji').value = t.emoji||'⚔️';
+  document.getElementById('etpl-xponly').checked = t.xpOnly||false;
+  document.getElementById('tpl-edit-modal').classList.add('active');
+}
+
+function saveTemplateEdit() {
+  const id = document.getElementById('etpl-id').value;
+  const t = S.customTemplates.find(x=>x.id===id); if(!t) return;
+  t.title = document.getElementById('etpl-title').value.trim()||t.title;
+  t.desc  = document.getElementById('etpl-desc').value.trim();
+  t.pts   = parseInt(document.getElementById('etpl-pts').value)||100;
+  t.diff  = document.getElementById('etpl-diff').value;
+  t.emoji = document.getElementById('etpl-emoji').value.trim()||'⚔️';
+  t.xpOnly= document.getElementById('etpl-xponly').checked;
+  save(); closeModal('tpl-edit-modal'); renderTemplates();
+  showNotif('✦ Template updated!');
+}
+
+function dupeTemplate(id) {
+  const all = getAllTemplates();
+  const t = all.find(x=>x.id===id); if(!t) return;
+  const newT = {...t, id:'tc'+Date.now(), title:t.title+' (copy)', cat:'Custom'};
+  S.customTemplates = S.customTemplates||[];
+  S.customTemplates.push(newT);
+  save(); renderTemplates();
+  showNotif('📋 Template duplicated!');
+}
+
+function deleteTemplate(id) {
+  if(!confirm('Delete this template from the library?')) return;
+  S.customTemplates = (S.customTemplates||[]).filter(x=>x.id!==id);
+  if(selectedTemplate && selectedTemplate.id===id) clearTplBar();
+  save(); renderTemplates();
+  showNotif('🗑️ Template deleted');
 }
 
 function postTemplate(player) {
@@ -1981,8 +2120,11 @@ function processRecurring() {
 
 function renderScores() {
   ['fox','forest'].forEach(p=>{
-    document.getElementById(`s-${p}-pts`).textContent=S[p].pts.toLocaleString();
-    document.getElementById(`s-${p}-money`).textContent='$'+(S[p].pts/PPD).toFixed(2);
+    const xp = S[p].xp || 0;
+    const bal = S[p].balance || 0;
+    document.getElementById(`s-${p}-xp`).textContent = xp.toLocaleString();
+    document.getElementById(`s-${p}-pts`).textContent = bal.toLocaleString();
+    document.getElementById(`s-${p}-money`).textContent = '$' + (bal/PPD).toFixed(2);
   });
   const hist=document.getElementById('hist-list');
   if(!S.history.length){hist.innerHTML=`<div class="empty-st" style="padding:14px"><div class="empty-txt">No history yet</div></div>`;return;}
@@ -1990,15 +2132,25 @@ function renderScores() {
     <div class="hist-item">
       <span class="h-tag ${h.player}-tag">${h.player}</span>
       <span class="h-name">${h.title}</span>
-      <span class="h-pts">+${h.pts}</span>
+      <span class="h-pts">+${h.pts}${h.xpOnly?' ⚡':''}</span>
       <span class="h-time">${new Date(h.time).toLocaleDateString()}</span>
     </div>`).join('');
 }
 
+function payOut(who) {
+  const name = who === 'fox' ? 'Fox' : 'Forest';
+  const bal = S[who].balance || 0;
+  if (bal === 0) { showNotif(`${name} has 0 points to pay out`); return; }
+  if (!confirm(`Pay out ${name}'s ${bal} points ($${(bal/PPD).toFixed(2)})?\nThis will zero their point balance but keep their XP and rank.`)) return;
+  S[who].balance = 0;
+  save(); renderScores(); updateHome();
+  showNotif(`💰 Paid out ${name}! XP and rank preserved.`);
+}
+
 function resetScores(who) {
-  if(!confirm(`Reset ${who==='all'?'ALL':who} scores?`))return;
-  if(who==='all'||who==='fox'){S.fox.pts=0;S.fox.cleared=0;}
-  if(who==='all'||who==='forest'){S.forest.pts=0;S.forest.cleared=0;}
+  if(!confirm(`Reset ${who==='all'?'ALL':who} scores? This will clear XP, points, and rank progress.`))return;
+  if(who==='all'||who==='fox'){S.fox.pts=0;S.fox.xp=0;S.fox.balance=0;S.fox.cleared=0;}
+  if(who==='all'||who==='forest'){S.forest.pts=0;S.forest.xp=0;S.forest.balance=0;S.forest.cleared=0;}
   if(who==='all'){S.subs=[];S.history=[];}
   else{S.subs=S.subs.filter(s=>s.player!==who||s.status!=='approved');S.history=S.history.filter(h=>h.player!==who);}
   save();renderScores();updateHome();showNotif('Scores reset');
@@ -2044,10 +2196,11 @@ function getLevelInfo(pts) {
 
 function updateHome() {
   ['fox','forest'].forEach(p => {
-    const pts = S[p].pts;
-    const { rank, next, pct, xpToNext } = getLevelInfo(pts);
-    document.getElementById(`${p}-pts-h`).textContent = pts.toLocaleString() + ' XP';
-    document.getElementById(`${p}-money-h`).textContent = pts.toLocaleString();
+    const xp = S[p].xp || 0;
+    const bal = S[p].balance || 0;
+    const { rank, next, pct, xpToNext } = getLevelInfo(xp);
+    document.getElementById(`${p}-pts-h`).textContent = xp.toLocaleString() + ' XP';
+    document.getElementById(`${p}-money-h`).textContent = bal.toLocaleString() + ' pts';
     document.getElementById(`${p}-cleared-h`).textContent = S[p].cleared;
     document.getElementById(`${p}-rank-title`).textContent = rank.title + ' · Level ' + rank.level;
     document.getElementById(`${p}-lv-label`).textContent = 'LV ' + rank.level;
@@ -2057,8 +2210,8 @@ function updateHome() {
 }
 
 function openLevelModal(p) {
-  const pts = S[p].pts;
-  const { rank, next, pct, xpToNext, idx } = getLevelInfo(pts);
+  const xp = S[p].xp || 0;
+  const { rank, next, pct, xpToNext, idx } = getLevelInfo(xp);
   const color = p === 'fox' ? 'var(--fox-bright)' : 'var(--forest-bright)';
   const colorClass = p;
 
@@ -2073,19 +2226,19 @@ function openLevelModal(p) {
   document.getElementById('lm-badge-name').textContent = p === 'fox' ? 'Fox' : 'Forest';
   document.getElementById('lm-current-rank').textContent = rank.title;
   document.getElementById('lm-current-lore').textContent = '"' + rank.lore + '"';
-  document.getElementById('lm-prog-cur').textContent = pts.toLocaleString() + ' XP';
+  document.getElementById('lm-prog-cur').textContent = xp.toLocaleString() + ' XP';
   document.getElementById('lm-prog-nxt').textContent = next ? 'Next: ' + next.xp.toLocaleString() + ' XP' : 'MAX RANK ✦';
   setTimeout(() => document.getElementById('lm-prog-fill').style.width = pct + '%', 50);
 
   const list = document.getElementById('lm-rank-list');
   list.innerHTML = RANKS.map((r, i) => {
-    const achieved = pts >= r.xp;
+    const achieved = xp >= r.xp;
     const isCurrent = i === idx;
     const isLocked = !achieved;
     let cls = isLocked ? 'locked' : achieved && !isCurrent ? 'achieved' : '';
     if (isCurrent) cls = 'current';
     const xpLabel = isCurrent
-      ? (next ? `${(pts - r.xp).toLocaleString()} / ${(next.xp - r.xp).toLocaleString()} XP` : 'MAX')
+      ? (next ? `${(xp - r.xp).toLocaleString()} / ${(next.xp - r.xp).toLocaleString()} XP` : 'MAX')
       : r.xp === 0 ? 'Start' : r.xp.toLocaleString() + ' XP';
     const xpCls = isCurrent ? 'current' : achieved ? 'achieved' : '';
     return `
@@ -2101,6 +2254,76 @@ function openLevelModal(p) {
   }).join('');
 
   document.getElementById('level-modal').classList.add('active');
+}
+
+// ============================================================
+//  MUSIC — Heroic chiptune-style soundtrack via Web Audio API
+// ============================================================
+let audioCtx = null;
+let musicPlaying = false;
+let musicNodes = [];
+let musicTimeout = null;
+
+const MELODY = [
+  // Heroic fanfare loop — C major pentatonic
+  {n:'E4',d:0.25},{n:'G4',d:0.25},{n:'A4',d:0.25},{n:'C5',d:0.5},
+  {n:'A4',d:0.25},{n:'G4',d:0.25},{n:'E4',d:0.5},
+  {n:'D4',d:0.25},{n:'F4',d:0.25},{n:'G4',d:0.25},{n:'A4',d:0.5},
+  {n:'G4',d:0.25},{n:'E4',d:0.25},{n:'C4',d:0.75},
+  {n:'E4',d:0.25},{n:'G4',d:0.25},{n:'B4',d:0.25},{n:'G5',d:0.5},
+  {n:'E5',d:0.25},{n:'D5',d:0.25},{n:'C5',d:0.5},
+  {n:'B4',d:0.25},{n:'A4',d:0.25},{n:'G4',d:0.25},{n:'A4',d:0.25},{n:'B4',d:0.25},
+  {n:'C5',d:1.0},
+];
+
+const NOTE_FREQ = {
+  'C3':130.81,'D3':146.83,'E3':164.81,'F3':174.61,'G3':196,'A3':220,'B3':246.94,
+  'C4':261.63,'D4':293.66,'E4':329.63,'F4':349.23,'G4':392,'A4':440,'B4':493.88,
+  'C5':523.25,'D5':587.33,'E5':659.25,'F5':698.46,'G5':783.99,'A5':880,'B5':987.77,
+};
+
+function playNote(freq, when, duration, vol=0.12) {
+  if(!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(freq, when);
+  gain.gain.setValueAtTime(0, when);
+  gain.gain.linearRampToValueAtTime(vol, when + 0.02);
+  gain.gain.setValueAtTime(vol, when + duration * 0.7);
+  gain.gain.linearRampToValueAtTime(0, when + duration * 0.95);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(when);
+  osc.stop(when + duration);
+  musicNodes.push(osc);
+}
+
+function scheduleLoop() {
+  if(!musicPlaying || !audioCtx) return;
+  const BPM = 108;
+  const beat = 60 / BPM;
+  let t = audioCtx.currentTime + 0.05;
+  MELODY.forEach(note => {
+    playNote(NOTE_FREQ[note.n]||440, t, note.d * beat);
+    // simple bass — root note 2 octaves down every beat
+    t += note.d * beat;
+  });
+  const loopDuration = MELODY.reduce((s,n)=>s+n.d,0) * beat * 1000;
+  musicTimeout = setTimeout(scheduleLoop, loopDuration - 200);
+}
+
+function toggleMusic() {
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  musicPlaying = !musicPlaying;
+  document.getElementById('music-btn').textContent = musicPlaying ? '🔊' : '🔇';
+  if(musicPlaying) {
+    scheduleLoop();
+  } else {
+    if(musicTimeout) clearTimeout(musicTimeout);
+    musicNodes.forEach(n=>{ try{n.stop();}catch(e){} });
+    musicNodes = [];
+  }
 }
 
 init();
