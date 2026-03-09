@@ -415,12 +415,19 @@ body::before {
 .cm-section-lbl { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 4px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
 .cm-preview { width: 100%; max-height: 180px; object-fit: contain; display: none; margin-bottom: 12px; border: 1px solid var(--border2); }
 .cm-drop {
+  display: block;
   border: 1px dashed var(--border2); padding: 26px 18px; text-align: center;
   cursor: pointer; transition: all 0.2s; margin-bottom: 14px;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 .cm-drop:hover, .cm-drop.has-file { border-color: var(--gold-dim); background: rgba(200,160,48,0.03); }
+.version-tag {
+  position: fixed; bottom: 8px; right: 10px; z-index: 50;
+  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px;
+  color: var(--text-dim); opacity: 0.4; pointer-events: none;
+  text-transform: uppercase;
+}
 .cm-drop-icon { font-size: 28px; margin-bottom: 6px; }
 .cm-drop-text { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
 .cm-reward { text-align: center; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); margin-bottom: 14px; text-transform: uppercase; }
@@ -1320,6 +1327,7 @@ body::before {
     <div class="modal-head"><div class="modal-htitle">✏️ Edit Template</div><button class="modal-x" onclick="closeModal('tpl-edit-modal')">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="etpl-id">
+      <input type="hidden" id="etpl-isbuiltin" value="0">
       <div class="form-group"><label class="form-lbl">Title</label><input class="f-input" id="etpl-title" type="text"></div>
       <div class="form-group"><label class="form-lbl">Description</label><textarea class="f-textarea" id="etpl-desc" style="min-height:70px"></textarea></div>
       <div class="form-row">
@@ -1372,14 +1380,15 @@ body::before {
       <div class="cm-bdesc" id="cm-desc"></div>
       <div class="cm-section-lbl">✦ Submit Your Proof Photo</div>
       <img class="cm-preview" id="cm-prev" src="" alt="">
-      <!-- File input completely outside the drop zone, triggered by button -->
-      <input type="file" accept="image/*" capture="environment" id="cm-file" onchange="handleProof(this)" style="display:none;position:static;width:0;height:0;opacity:0;">
-      <div class="cm-drop" id="cm-drop" onclick="document.getElementById('cm-file').click()">
+      <input type="file" accept="image/*" capture="environment" id="cm-file" onchange="handleProof(this)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;">
+      <label for="cm-file" class="cm-drop" id="cm-drop">
         <div class="cm-drop-icon">📷</div>
-        <div class="cm-drop-text">Tap to photograph your completed quest</div>
-      </div>
+        <div class="cm-drop-text" id="cm-drop-text">Tap to photograph your completed quest</div>
+      </label>
       <div class="cm-reward" id="cm-reward"></div>
-      <button class="cm-submit" id="cm-submit" onclick="submitBounty()">⚡ Submit for Approval</button>
+      <div id="cm-submit-wrap">
+        <button class="cm-submit" id="cm-submit" onclick="submitBounty()">⚡ Submit for Approval</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1410,6 +1419,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
+<div class="version-tag">v5</div>
 
 <script>
 // ============================================================
@@ -1475,6 +1485,7 @@ function initFirebase() {
         if (!S.subs)            S.subs = [];
         if (!S.bounties)        S.bounties = [];
         if (!S.history)         S.history = [];
+        if (!S.hiddenBuiltins)  S.hiddenBuiltins = [];
         PIN = S.pin;
         // Migrate old data: if xp/balance missing, seed from pts
         ['fox','forest'].forEach(p => {
@@ -1524,6 +1535,7 @@ function fallbackToLocal() {
   if (!S.subs)            S.subs = [];
   if (!S.bounties)        S.bounties = [];
   if (!S.history)         S.history = [];
+  if (!S.hiddenBuiltins)  S.hiddenBuiltins = [];
   PIN = S.pin;
   ['fox','forest'].forEach(p => {
     if (!S[p]) S[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
@@ -1678,8 +1690,10 @@ function openClaim(id) {
   document.getElementById('cm-prev').style.display = 'none';
   document.getElementById('cm-prev').src = '';
   document.getElementById('cm-drop').classList.remove('has-file');
+  document.getElementById('cm-drop-text').textContent = 'Tap to photograph your completed quest';
   document.getElementById('cm-file').value = '';
   document.getElementById('cm-submit').classList.remove('ready');
+  document.getElementById('cm-submit').style.opacity = '0.35';
   document.getElementById('claim-modal').classList.add('active');
 }
 
@@ -1691,7 +1705,9 @@ function handleProof(input) {
     const pr = document.getElementById('cm-prev');
     pr.src = curPhoto; pr.style.display = 'block';
     document.getElementById('cm-drop').classList.add('has-file');
+    document.getElementById('cm-drop-text').textContent = '✓ Photo ready — tap Submit below';
     document.getElementById('cm-submit').classList.add('ready');
+    document.getElementById('cm-submit').style.opacity = '1';
   };
   r.readAsDataURL(file);
 }
@@ -1885,7 +1901,76 @@ function setAddMode(mode) {
 }
 
 function getAllTemplates() {
-  return [...BUILTIN_TEMPLATES, ...(S.customTemplates||[])];
+  const hidden = S.hiddenBuiltins || [];
+  const builtins = BUILTIN_TEMPLATES.filter(t => !hidden.includes(t.id));
+  // Check if any built-in has been overridden by a custom entry with same original id
+  const overridden = (S.customTemplates||[]).filter(t=>t.overridesId).map(t=>t.overridesId);
+  return [...builtins.filter(t=>!overridden.includes(t.id)), ...(S.customTemplates||[])];
+}
+
+function hideBuiltin(id) {
+  if(!confirm('Remove this template from your library?')) return;
+  S.hiddenBuiltins = S.hiddenBuiltins || [];
+  if(!S.hiddenBuiltins.includes(id)) S.hiddenBuiltins.push(id);
+  if(selectedTemplate && selectedTemplate.id===id) clearTplBar();
+  save(); renderTemplates();
+  showNotif('🗑️ Template removed');
+}
+
+function editTemplate(id) {
+  const isBuiltin = !id.startsWith('tc');
+  let t;
+  if (isBuiltin) {
+    // For built-ins, find from BUILTIN_TEMPLATES
+    t = BUILTIN_TEMPLATES.find(x=>x.id===id);
+    if (!t) return;
+  } else {
+    t = S.customTemplates.find(x=>x.id===id);
+    if (!t) return;
+  }
+  document.getElementById('etpl-id').value = id;
+  document.getElementById('etpl-isbuiltin').value = isBuiltin ? '1' : '0';
+  document.getElementById('etpl-title').value = t.title;
+  document.getElementById('etpl-desc').value = t.desc||'';
+  document.getElementById('etpl-pts').value = t.pts||100;
+  document.getElementById('etpl-diff').value = t.diff||'easy';
+  document.getElementById('etpl-emoji').value = t.emoji||'⚔️';
+  document.getElementById('etpl-xponly').checked = t.xpOnly||false;
+  document.getElementById('tpl-edit-modal').classList.add('active');
+}
+
+function saveTemplateEdit() {
+  const id = document.getElementById('etpl-id').value;
+  const isBuiltin = document.getElementById('etpl-isbuiltin').value === '1';
+  const newData = {
+    title: document.getElementById('etpl-title').value.trim(),
+    desc:  document.getElementById('etpl-desc').value.trim(),
+    pts:   parseInt(document.getElementById('etpl-pts').value)||100,
+    diff:  document.getElementById('etpl-diff').value,
+    emoji: document.getElementById('etpl-emoji').value.trim()||'⚔️',
+    xpOnly:document.getElementById('etpl-xponly').checked,
+  };
+  if (isBuiltin) {
+    // Convert built-in to custom override
+    const orig = BUILTIN_TEMPLATES.find(x=>x.id===id);
+    S.customTemplates = S.customTemplates||[];
+    S.hiddenBuiltins = S.hiddenBuiltins||[];
+    // Hide the original
+    if(!S.hiddenBuiltins.includes(id)) S.hiddenBuiltins.push(id);
+    // Add custom override
+    S.customTemplates.push({
+      id: 'tc'+Date.now(),
+      cat: orig?.cat||'Custom',
+      overridesId: id,
+      ...newData
+    });
+  } else {
+    const t = S.customTemplates.find(x=>x.id===id);
+    if (!t) return;
+    Object.assign(t, newData);
+  }
+  save(); closeModal('tpl-edit-modal'); renderTemplates();
+  showNotif('✦ Template updated!');
 }
 
 function renderTemplates() {
@@ -1911,11 +1996,11 @@ function renderTemplates() {
             <div class="tpl-card-pts">${t.xpOnly?'⚡':t.pts}</div>
             <div class="tpl-card-top"><span class="tpl-card-emoji">${t.emoji}</span><span class="tpl-card-name">${t.title}</span></div>
             <div class="tpl-card-meta">${t.diff} · ${t.xpOnly?'XP only':t.pts+' pts'}</div>
-            ${isCustom(t.id) ? `<div class="tpl-card-actions" onclick="event.stopPropagation()">
+            <div class="tpl-card-actions" onclick="event.stopPropagation()">
               <button class="tpl-act-btn" onclick="editTemplate('${t.id}')">✏️</button>
               <button class="tpl-act-btn" onclick="dupeTemplate('${t.id}')">📋</button>
-              <button class="tpl-act-btn del" onclick="deleteTemplate('${t.id}')">🗑️</button>
-            </div>` : ''}
+              ${isCustom(t.id) ? `<button class="tpl-act-btn del" onclick="deleteTemplate('${t.id}')">🗑️</button>` : `<button class="tpl-act-btn del" onclick="hideBuiltin('${t.id}')">🗑️</button>`}
+            </div>
           </div>`).join('')}
       </div>
     </div>`).join('');
@@ -1934,32 +2019,6 @@ function selectTemplate(id) {
 function clearTplBar() {
   selectedTemplate=null;
   document.getElementById('tpl-post-bar').classList.remove('visible');
-}
-
-function editTemplate(id) {
-  const t = S.customTemplates.find(x=>x.id===id); if(!t) return;
-  // populate edit modal
-  document.getElementById('etpl-id').value = t.id;
-  document.getElementById('etpl-title').value = t.title;
-  document.getElementById('etpl-desc').value = t.desc||'';
-  document.getElementById('etpl-pts').value = t.pts||100;
-  document.getElementById('etpl-diff').value = t.diff||'easy';
-  document.getElementById('etpl-emoji').value = t.emoji||'⚔️';
-  document.getElementById('etpl-xponly').checked = t.xpOnly||false;
-  document.getElementById('tpl-edit-modal').classList.add('active');
-}
-
-function saveTemplateEdit() {
-  const id = document.getElementById('etpl-id').value;
-  const t = S.customTemplates.find(x=>x.id===id); if(!t) return;
-  t.title = document.getElementById('etpl-title').value.trim()||t.title;
-  t.desc  = document.getElementById('etpl-desc').value.trim();
-  t.pts   = parseInt(document.getElementById('etpl-pts').value)||100;
-  t.diff  = document.getElementById('etpl-diff').value;
-  t.emoji = document.getElementById('etpl-emoji').value.trim()||'⚔️';
-  t.xpOnly= document.getElementById('etpl-xponly').checked;
-  save(); closeModal('tpl-edit-modal'); renderTemplates();
-  showNotif('✦ Template updated!');
 }
 
 function dupeTemplate(id) {
