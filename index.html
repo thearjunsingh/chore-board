@@ -2,8 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>HERO BOUNTY BOARD</title>
+
+<!-- PWA: Makes "Add to Home Screen" open as full-screen app with no browser chrome -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Bounty Board">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0d1a">
+
+<!-- PWA manifest (inline so no extra file needed) -->
+<link rel="manifest" href="data:application/json,{%22name%22:%22Hero%20Bounty%20Board%22,%22short_name%22:%22Bounty%20Board%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0d1a%22,%22theme_color%22:%22%230a0d1a%22,%22orientation%22:%22portrait%22}">
+
+<!-- App icon for home screen (gold shield emoji rendered to canvas) -->
+<script>
+  (function(){
+    const c=document.createElement('canvas'); c.width=c.height=180;
+    const x=c.getContext('2d');
+    x.fillStyle='#0a0d1a'; x.fillRect(0,0,180,180);
+    x.font='120px serif'; x.textAlign='center'; x.textBaseline='middle';
+    x.fillText('🛡️',90,95);
+    const link=document.createElement('link');
+    link.rel='apple-touch-icon'; link.href=c.toDataURL();
+    document.head.appendChild(link);
+  })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -39,6 +63,9 @@ body {
   font-family: 'Crimson Pro', Georgia, serif;
   min-height: 100vh;
   overflow-x: hidden;
+  /* Respect notch and home bar in standalone PWA mode */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 body::before {
   content: '';
@@ -1422,7 +1449,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v10</div>
+<div class="version-tag">v11</div>
 
 <script>
 // ============================================================
