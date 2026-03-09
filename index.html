@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HERO BOUNTY BOARD</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root {
+  --fox-primary: #3AAA35;
+  --fox-bright: #5FD155;
+  --fox-dark: #1A5C17;
+  --fox-glow: rgba(58,170,53,0.35);
+  --forest-primary: #E8820C;
+  --forest-bright: #FF9F1C;
+  --forest-dark: #7A3A00;
+  --forest-glow: rgba(232,130,12,0.35);
+  --bg: #0A0C14;
+  --bg2: #0F1220;
+  --panel: #131624;
+  --panel2: #1A1F30;
+  --border: #252A40;
+  --border2: #2E3550;
+  --text: #C8D0E8;
+  --text-dim: #5A6080;
+  --gold: #C8A030;
+  --gold-bright: #FFD060;
+  --gold-dim: #7A5C10;
+  --red: #CC3020;
+  --cream: #EAE0C8;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Crimson Pro', Georgia, serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 65%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 55% 10%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 45%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 80%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 22% 88%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 90% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 48% 35%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 8% 52%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 62% 78%, rgba(255,255,255,0.35) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+.screen { display: none; min-height: 100vh; position: relative; z-index: 1; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ===== HOME ===== */
+#home {
+  align-items: center;
+  justify-content: flex-start;
+  padding: 32px 20px 48px;
+  background:
+    radial-gradient(ellipse at 50% -5%, rgba(200,160,48,0.16) 0%, transparent 55%),
+    radial-gradient(ellipse at 15% 95%, rgba(58,170,53,0.07) 0%, transparent 40%),
+    radial-gradient(ellipse at 85% 95%, rgba(232,130,12,0.07) 0%, transparent 40%),
+    var(--bg);
+}
+
+.hero-banner {
+  text-align: center;
+  margin-bottom: 36px;
+  animation: fadeDown 0.7s ease both;
+}
+
+.hero-crest {
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 0 18px rgba(200,160,48,0.55));
+  animation: floatCrest 4s ease-in-out infinite;
+  display: block;
+}
+@keyframes floatCrest {
+  0%,100% { transform: translateY(0); filter: drop-shadow(0 0 18px rgba(200,160,48,0.55)); }
+  50% { transform: translateY(-7px); filter: drop-shadow(0 0 30px rgba(200,160,48,0.85)); }
+}
+
+.hero-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(20px, 6vw, 44px);
+  font-weight: 900;
+  color: var(--gold-bright);
+  text-shadow: 0 0 28px rgba(200,160,48,0.5), 0 2px 0 var(--gold-dim);
+  letter-spacing: 1px;
+  line-height: 1.15;
+}
+
+.hero-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  margin: 10px 0 6px;
+}
+.hdl { height: 1px; width: 50px; background: linear-gradient(90deg, transparent, var(--gold-dim), transparent); }
+.hdg { color: var(--gold); font-size: 12px; }
+
+.hero-sub {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* PLAYER CARDS */
+.player-cards {
+  display: flex;
+  gap: 20px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 760px;
+  animation: fadeUp 0.7s 0.15s ease both;
+}
+
+.player-card {
+  width: 320px;
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  flex-shrink: 1;
+}
+.player-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, transparent 55%);
+  pointer-events: none;
+}
+.player-card:hover { transform: translateY(-6px); }
+.player-card.fox { border-color: var(--fox-dark); box-shadow: 0 0 0 1px rgba(58,170,53,0.15); }
+.player-card.fox:hover { border-color: var(--fox-primary); box-shadow: 0 14px 40px var(--fox-glow), 0 0 0 1px var(--fox-primary); }
+.player-card.forest { border-color: var(--forest-dark); box-shadow: 0 0 0 1px rgba(232,130,12,0.15); }
+.player-card.forest:hover { border-color: var(--forest-primary); box-shadow: 0 14px 40px var(--forest-glow), 0 0 0 1px var(--forest-primary); }
+
+.card-top-bar { height: 3px; width: 100%; }
+.fox .card-top-bar { background: linear-gradient(90deg, var(--fox-dark), var(--fox-bright), var(--fox-dark)); }
+.forest .card-top-bar { background: linear-gradient(90deg, var(--forest-dark), var(--forest-bright), var(--forest-dark)); }
+
+/* Avatar — isolated section so nothing overlaps */
+.card-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 22px 20px 0;
+}
+
+.avatar-ring {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  padding: 3px;
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+}
+.fox .avatar-ring { background: conic-gradient(var(--fox-bright), var(--fox-dark), var(--fox-bright)); box-shadow: 0 0 18px var(--fox-glow); }
+.forest .avatar-ring { background: conic-gradient(var(--forest-bright), var(--forest-dark), var(--forest-bright)); box-shadow: 0 0 18px var(--forest-glow); }
+
+.avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--panel2);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-placeholder-icon { font-size: 36px; line-height: 1; }
+
+.avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.avatar-upload-input { display: none; }
+
+.avatar-hint {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 8px;
+  cursor: pointer;
+  transition: color 0.2s;
+  text-align: center;
+}
+.avatar-hint:hover { color: var(--gold); }
+
+/* Card text — clearly below avatar */
+.card-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-align: center;
+  padding: 14px 20px 2px;
+}
+.fox .card-name { color: var(--fox-bright); }
+.forest .card-name { color: var(--forest-bright); }
+
+.card-rank {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+  padding-bottom: 14px;
+}
+
+.card-sep { height: 1px; margin: 0 20px; background: linear-gradient(90deg, transparent, var(--border2), transparent); }
+
+.card-stats { padding: 14px 20px; }
+
+.stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.stat-lbl { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); }
+.stat-val { font-family: 'Cinzel Decorative', serif; font-size: 18px; font-weight: 700; }
+.fox .stat-val { color: var(--fox-bright); }
+.forest .stat-val { color: var(--forest-bright); }
+.stat-val.gold { color: var(--gold-bright) !important; font-size: 16px; }
+
+.xp-bar { height: 4px; background: var(--border2); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+.xp-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.fox .xp-fill { background: linear-gradient(90deg, var(--fox-dark), var(--fox-bright)); }
+.forest .xp-fill { background: linear-gradient(90deg, var(--forest-dark), var(--forest-bright)); }
+
+.card-cta {
+  padding: 12px 20px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-align: center;
+  border-top: 1px solid var(--border2);
+  transition: background 0.2s;
+}
+.fox .card-cta { color: var(--fox-bright); background: rgba(58,170,53,0.04); }
+.fox:hover .card-cta { background: rgba(58,170,53,0.1); }
+.forest .card-cta { color: var(--forest-bright); background: rgba(232,130,12,0.04); }
+.forest:hover .card-cta { background: rgba(232,130,12,0.1); }
+
+.portal-link {
+  margin-top: 28px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  text-transform: uppercase;
+  padding: 10px 22px;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+  animation: fadeUp 0.7s 0.3s ease both;
+}
+.portal-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* ===== BOARD ===== */
+#board { background: var(--bg); }
+
+.board-header {
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--border2);
+  position: sticky; top: 0; z-index: 10;
+  backdrop-filter: blur(12px);
+  background: rgba(10,12,20,0.92);
+}
+.board-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0; height: 1px;
+}
+.board-header.fox::after { background: linear-gradient(90deg, transparent, var(--fox-primary), transparent); }
+.board-header.forest::after { background: linear-gradient(90deg, transparent, var(--forest-primary), transparent); }
+
+.back-btn {
+  background: none; border: 1px solid var(--border2); color: var(--text-dim);
+  padding: 6px 12px; cursor: pointer; font-family: 'Cinzel', serif;
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase; transition: all 0.2s; flex-shrink: 0;
+}
+.back-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+.board-hdr-avatar {
+  width: 38px; height: 38px; border-radius: 50%; object-fit: cover;
+  border: 2px solid; flex-shrink: 0;
+}
+.board-header.fox .board-hdr-avatar { border-color: var(--fox-primary); }
+.board-header.forest .board-hdr-avatar { border-color: var(--forest-primary); }
+
+.board-title-wrap { flex: 1; min-width: 0; }
+.board-pname { font-family: 'Cinzel Decorative', serif; font-size: 18px; font-weight: 700; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board-header.fox .board-pname { color: var(--fox-bright); }
+.board-header.forest .board-pname { color: var(--forest-bright); }
+.board-psub { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); margin-top: 2px; }
+
+.hdr-score { text-align: right; flex-shrink: 0; }
+.hdr-pts { font-family: 'Cinzel Decorative', serif; font-size: 17px; font-weight: 700; line-height: 1; }
+.board-header.fox .hdr-pts { color: var(--fox-bright); }
+.board-header.forest .hdr-pts { color: var(--forest-bright); }
+.hdr-money { font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); margin-top: 2px; }
+
+.bounty-grid { padding: 24px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+
+.bounty-card {
+  background: var(--panel); border: 1px solid var(--border2);
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.bounty-card:not(.done):not(.pend):hover { transform: translateY(-4px); }
+.bounty-card.fox:not(.done):not(.pend):hover { border-color: var(--fox-primary); box-shadow: 0 8px 28px var(--fox-glow); }
+.bounty-card.forest:not(.done):not(.pend):hover { border-color: var(--forest-primary); box-shadow: 0 8px 28px var(--forest-glow); }
+.bounty-card.done { opacity: 0.45; cursor: default; }
+.bounty-card.pend { opacity: 0.65; cursor: default; }
+
+.bc-top { height: 2px; }
+.bounty-card.fox .bc-top { background: linear-gradient(90deg, transparent, var(--fox-primary), transparent); }
+.bounty-card.forest .bc-top { background: linear-gradient(90deg, transparent, var(--forest-primary), transparent); }
+
+.bc-ribbon {
+  display: none; position: absolute; top: 14px; right: -30px;
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; padding: 4px 42px; transform: rotate(45deg);
+}
+.bounty-card.done .bc-ribbon { display: block; background: var(--gold); color: #000; }
+.bounty-card.pend .bc-ribbon { display: block; background: var(--border2); color: var(--text-dim); }
+
+.bc-icon { height: 106px; display: flex; align-items: center; justify-content: center; font-size: 50px; background: var(--panel2); position: relative; }
+.bc-icon::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 36px; background: linear-gradient(0deg, var(--panel) 0%, transparent 100%); }
+
+.bc-body { padding: 12px 16px 16px; }
+
+.bc-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+
+.diff-tag {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; padding: 2px 8px; border: 1px solid;
+}
+.diff-easy { color: #5FD155; border-color: rgba(95,209,85,0.4); background: rgba(95,209,85,0.07); }
+.diff-medium { color: var(--gold-bright); border-color: rgba(255,208,96,0.4); background: rgba(255,208,96,0.07); }
+.diff-hard { color: #FF6040; border-color: rgba(255,96,64,0.4); background: rgba(255,96,64,0.07); }
+
+.bc-title { font-family: 'Cinzel Decorative', serif; font-size: 15px; font-weight: 700; color: var(--cream); line-height: 1.25; margin-bottom: 6px; }
+.bc-desc { font-size: 14px; color: var(--text-dim); line-height: 1.55; margin-bottom: 14px; font-style: italic; }
+
+.bc-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--border); }
+.bc-pts { font-family: 'Cinzel Decorative', serif; font-size: 20px; font-weight: 700; color: var(--gold-bright); line-height: 1; }
+.bc-money { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
+
+.claim-btn {
+  font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase; padding: 10px 20px;
+  border: 1px solid; background: none; cursor: pointer; transition: all 0.2s;
+  min-height: 44px;
+}
+.fox .claim-btn { color: var(--fox-bright); border-color: var(--fox-primary); }
+.fox .claim-btn:hover { background: var(--fox-primary); color: #000; }
+.forest .claim-btn { color: var(--forest-bright); border-color: var(--forest-primary); }
+.forest .claim-btn:hover { background: var(--forest-primary); color: #000; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(5,6,12,0.88); z-index: 100;
+  align-items: center; justify-content: center; padding: 20px;
+  backdrop-filter: blur(6px);
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--panel); border: 1px solid var(--border2);
+  width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto;
+  animation: modalIn 0.22s ease both; box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+}
+@keyframes modalIn { from{transform:scale(0.94) translateY(14px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+.modal-bar { height: 2px; }
+.modal.fox-m .modal-bar { background: linear-gradient(90deg, transparent, var(--fox-primary), transparent); }
+.modal.forest-m .modal-bar { background: linear-gradient(90deg, transparent, var(--forest-primary), transparent); }
+.modal-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-htitle { font-family: 'Cinzel Decorative', serif; font-size: 15px; font-weight: 700; color: var(--cream); }
+.modal-x { background: none; border: none; color: var(--text-dim); font-size: 17px; cursor: pointer; padding: 4px; line-height: 1; transition: color 0.2s; }
+.modal-x:hover { color: var(--text); }
+.modal-body { padding: 18px; }
+
+.cm-bname { font-family: 'Cinzel Decorative', serif; font-size: 18px; color: var(--cream); margin-bottom: 6px; }
+.cm-bdesc { font-size: 14px; color: var(--text-dim); font-style: italic; line-height: 1.6; margin-bottom: 18px; }
+.cm-section-lbl { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 4px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+.cm-preview { width: 100%; max-height: 180px; object-fit: contain; display: none; margin-bottom: 12px; border: 1px solid var(--border2); }
+.cm-drop {
+  border: 1px dashed var(--border2); padding: 26px 18px; text-align: center;
+  cursor: pointer; transition: all 0.2s; margin-bottom: 14px; position: relative;
+}
+.cm-drop:hover, .cm-drop.has-file { border-color: var(--gold-dim); background: rgba(200,160,48,0.03); }
+.cm-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.cm-drop-icon { font-size: 28px; margin-bottom: 6px; }
+.cm-drop-text { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
+.cm-reward { text-align: center; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); margin-bottom: 14px; text-transform: uppercase; }
+.cm-submit {
+  width: 100%; padding: 13px; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 5px; text-transform: uppercase; border: none; cursor: pointer;
+  transition: all 0.2s; opacity: 0.35; pointer-events: none;
+}
+.cm-submit.ready { opacity: 1; pointer-events: all; }
+.fox-m .cm-submit { background: var(--fox-primary); color: #000; }
+.fox-m .cm-submit.ready:hover { background: var(--fox-bright); }
+.forest-m .cm-submit { background: var(--forest-primary); color: #000; }
+.forest-m .cm-submit.ready:hover { background: var(--forest-bright); }
+
+/* ===== ADMIN ===== */
+#admin { background: var(--bg); }
+.admin-header {
+  padding: 12px 18px; display: flex; align-items: center; gap: 14px;
+  border-bottom: 1px solid var(--border2); position: sticky; top: 0; z-index: 10;
+  background: rgba(10,12,20,0.95); backdrop-filter: blur(12px);
+}
+.admin-header::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-dim), transparent); }
+.admin-ttl { font-family: 'Cinzel Decorative', serif; font-size: 17px; font-weight: 700; color: var(--gold-bright); }
+.admin-tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 18px; overflow-x: auto; }
+.a-tab { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; padding: 11px 16px; cursor: pointer; color: var(--text-dim); border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
+.a-tab.active { color: var(--gold); border-color: var(--gold); }
+.a-tab:hover:not(.active) { color: var(--text); }
+.admin-body { padding: 18px; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+.pend-card { background: var(--panel2); border: 1px solid var(--border2); padding: 14px; margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start; }
+.pend-thumb { width: 70px; height: 70px; object-fit: cover; border: 1px solid var(--border2); flex-shrink: 0; cursor: pointer; }
+.pend-info { flex: 1; min-width: 0; }
+.pend-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.p-tag { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 2px 8px; }
+.fox-tag { background: var(--fox-primary); color: #000; }
+.forest-tag { background: var(--forest-primary); color: #000; }
+.p-name { font-family: 'Cinzel', serif; font-size: 13px; color: var(--cream); }
+.p-pts { font-family: 'Cinzel Decorative', serif; font-size: 14px; color: var(--gold); margin-bottom: 6px; }
+.p-time { font-family: 'Cinzel', serif; font-size: 9px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 10px; }
+.p-actions { display: flex; gap: 8px; }
+.app-btn, .rej-btn { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px; border: none; cursor: pointer; transition: all 0.2s; }
+.app-btn { background: var(--fox-primary); color: #000; }
+.app-btn:hover { background: var(--fox-bright); }
+.rej-btn { background: transparent; color: var(--red); border: 1px solid var(--red); }
+.rej-btn:hover { background: var(--red); color: #fff; }
+
+.sec-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 22px; }
+.sec-hdr:first-child { margin-top: 0; }
+.sec-ttl { font-family: 'Cinzel Decorative', serif; font-size: 15px; font-weight: 700; }
+.sec-ttl.fox-s { color: var(--fox-bright); }
+.sec-ttl.forest-s { color: var(--forest-bright); }
+.sec-btn { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 5px 12px; background: none; cursor: pointer; transition: all 0.2s; border: 1px solid; }
+.sec-btn.fox-b { color: var(--fox-primary); border-color: var(--fox-dark); }
+.sec-btn.fox-b:hover { background: var(--fox-primary); color: #000; }
+.sec-btn.forest-b { color: var(--forest-primary); border-color: var(--forest-dark); }
+.sec-btn.forest-b:hover { background: var(--forest-primary); color: #000; }
+
+.mgr { background: var(--panel2); border: 1px solid var(--border); padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.mgr-emoji { font-size: 20px; flex-shrink: 0; }
+.mgr-info { flex: 1; min-width: 0; }
+.mgr-name { font-family: 'Cinzel', serif; font-size: 13px; color: var(--cream); }
+.mgr-meta { font-family: 'Cinzel', serif; font-size: 9px; color: var(--gold-dim); letter-spacing: 1px; }
+.mgr-acts { display: flex; gap: 6px; flex-shrink: 0; }
+.tog-b, .del-b { background: none; border: 1px solid var(--border2); color: var(--text-dim); padding: 3px 8px; font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+.tog-b.on { border-color: var(--fox-primary); color: var(--fox-bright); }
+.tog-b:hover { border-color: var(--gold-dim); color: var(--gold); }
+.del-b:hover { border-color: var(--red); color: var(--red); }
+
+.score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.score-box { background: var(--panel2); border: 1px solid; padding: 18px; }
+.score-box.fox { border-color: var(--fox-dark); }
+.score-box.forest { border-color: var(--forest-dark); }
+.sb-name { font-family: 'Cinzel Decorative', serif; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.score-box.fox .sb-name { color: var(--fox-bright); }
+.score-box.forest .sb-name { color: var(--forest-bright); }
+.sb-pts { font-family: 'Cinzel Decorative', serif; font-size: 40px; color: var(--cream); line-height: 1; }
+.sb-money { font-family: 'Cinzel', serif; font-size: 15px; color: var(--gold-bright); }
+.sb-lbl { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-top: 6px; }
+.reset-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.rst-btn { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 7px 14px; background: none; border: 1px solid var(--red); color: var(--red); cursor: pointer; transition: all 0.2s; }
+.rst-btn:hover { background: var(--red); color: #fff; }
+
+.hist-item { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.h-tag { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; flex-shrink: 0; }
+.h-name { flex: 1; color: var(--text); font-style: italic; }
+.h-pts { color: var(--gold); font-family: 'Cinzel', serif; font-size: 12px; font-weight: 600; }
+.h-time { color: var(--text-dim); font-size: 10px; flex-shrink: 0; }
+
+.form-group { margin-bottom: 13px; }
+.form-lbl { display: block; font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 5px; }
+.f-input, .f-select, .f-textarea { width: 100%; background: var(--panel2); border: 1px solid var(--border2); color: var(--text); padding: 10px 12px; font-family: 'Crimson Pro', serif; font-size: 15px; outline: none; transition: border-color 0.2s; appearance: none; }
+.f-input:focus, .f-select:focus, .f-textarea:focus { border-color: var(--gold-dim); }
+.f-select option { background: var(--panel2); }
+.f-textarea { resize: vertical; min-height: 78px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.post-btn { width: 100%; padding: 13px; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; background: var(--gold); color: #000; border: none; cursor: pointer; transition: all 0.2s; }
+.post-btn:hover { background: var(--gold-bright); }
+
+/* LOCK */
+#lockscreen { display: none; position: fixed; inset: 0; background: rgba(5,6,12,0.97); z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 14px; padding: 20px; backdrop-filter: blur(10px); }
+.lk-icon { font-size: 42px; filter: drop-shadow(0 0 14px rgba(200,160,48,0.5)); }
+.lk-title { font-family: 'Cinzel Decorative', serif; font-size: 20px; font-weight: 700; color: var(--gold-bright); text-align: center; }
+.lk-sub { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 5px; text-transform: uppercase; color: var(--text-dim); text-align: center; }
+.lk-input { background: var(--panel); border: 1px solid var(--border2); color: var(--cream); padding: 14px 18px; font-family: 'Cinzel Decorative', serif; font-size: 24px; letter-spacing: 8px; text-align: center; width: 210px; outline: none; transition: border-color 0.2s; }
+.lk-input:focus { border-color: var(--gold-dim); }
+.lk-input.err { border-color: var(--red); animation: shake 0.3s ease; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+.lk-btn { background: var(--gold); border: none; color: #000; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; padding: 12px 34px; cursor: pointer; transition: all 0.2s; }
+.lk-btn:hover { background: var(--gold-bright); }
+.lk-cancel { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); cursor: pointer; margin-top: 4px; transition: color 0.2s; }
+.lk-cancel:hover { color: var(--text); }
+
+#photo-view-modal .modal { max-width: 540px; }
+#photo-view-modal img { width: 100%; display: block; }
+
+/* Phone-friendly modal */
+@media (max-width: 639px) {
+  .modal { max-width: 100%; margin: 0; border-left: none; border-right: none; border-bottom: none; border-radius: 0; position: fixed; bottom: 0; left: 0; right: 0; max-height: 92vh; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .cm-submit { padding: 16px; font-size: 12px; }
+  .f-input, .f-select, .f-textarea { font-size: 16px; } /* prevent iOS zoom */
+}
+
+.notif { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--gold); color: #000; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; padding: 12px 26px; z-index: 400; transition: transform 0.3s ease; white-space: nowrap; }
+.notif.show { transform: translateX(-50%) translateY(0); }
+
+/* ===== LEVEL BAR (clickable) ===== */
+.level-bar-wrap {
+  cursor: pointer;
+  padding: 8px 10px;
+  margin: 0 -10px 10px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: background 0.2s, border-color 0.2s;
+  position: relative;
+}
+.level-bar-wrap:hover {
+  background: rgba(200,160,48,0.06);
+  border-color: var(--gold-dim);
+}
+.level-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+.level-bar-lv {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+.level-bar-next {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.level-bar-hint {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  text-align: right;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.level-bar-wrap:hover .level-bar-hint { opacity: 1; }
+
+/* ===== LEVEL PROGRESSION MODAL ===== */
+#level-modal .modal { max-width: 560px; }
+
+.lm-hero-banner {
+  padding: 24px 24px 0;
+  text-align: center;
+}
+.lm-player-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  border: 1px solid;
+  margin-bottom: 6px;
+}
+.lm-player-badge.fox { border-color: var(--fox-dark); }
+.lm-player-badge.forest { border-color: var(--forest-dark); }
+.lm-badge-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+.lm-player-badge.fox .lm-badge-name { color: var(--fox-bright); }
+.lm-player-badge.forest .lm-badge-name { color: var(--forest-bright); }
+
+.lm-current-rank {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cream);
+  margin: 10px 0 4px;
+}
+.lm-current-lore {
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+
+.lm-rank-list {
+  padding: 0 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lm-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  position: relative;
+  transition: background 0.15s;
+}
+.lm-rank-row.achieved {
+  border-color: var(--border2);
+  background: var(--panel2);
+}
+.lm-rank-row.current {
+  border-color: var(--gold-dim);
+  background: rgba(200,160,48,0.08);
+}
+.lm-rank-row.locked {
+  opacity: 0.38;
+}
+
+.lm-rank-icon {
+  font-size: 26px;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.lm-rank-info { flex: 1; min-width: 0; }
+.lm-rank-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1.2;
+}
+.lm-rank-row.current .lm-rank-name { color: var(--gold-bright); }
+.lm-rank-sub {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.lm-rank-xp {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.lm-rank-xp.achieved { color: var(--gold); }
+.lm-rank-xp.current { color: var(--gold-bright); font-weight: 700; }
+
+.lm-current-pip {
+  position: absolute;
+  right: -1px; top: 50%;
+  transform: translateY(-50%);
+  width: 4px; height: 60%;
+  border-radius: 2px 0 0 2px;
+  background: var(--gold);
+}
+
+.lm-progress-bar-wrap {
+  padding: 0 20px 20px;
+}
+.lm-prog-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.lm-prog-bar {
+  height: 8px;
+  background: var(--border2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.lm-prog-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright));
+  transition: width 0.6s ease;
+}
+
+.lm-connector {
+  width: 2px;
+  height: 8px;
+  background: var(--border2);
+  margin: 0 auto;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+/* vertical line between rows */
+.lm-rank-list::before {
+  display: none;
+}
+.recur-card {
+  background: var(--panel2);
+  border: 1px solid var(--border2);
+  padding: 14px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.recur-emoji { font-size: 22px; flex-shrink: 0; padding-top: 2px; }
+.recur-info { flex: 1; min-width: 0; }
+.recur-name { font-family: 'Cinzel', serif; font-size: 13px; color: var(--cream); margin-bottom: 3px; }
+.recur-meta { font-family: 'Cinzel', serif; font-size: 9px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 6px; }
+.recur-schedule {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;
+}
+.day-chip {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700;
+  letter-spacing: 1px; padding: 2px 6px; border-radius: 2px; text-transform: uppercase;
+  background: var(--border2); color: var(--text-dim);
+}
+.day-chip.on { background: var(--gold-dim); color: var(--gold-bright); }
+.recur-acts { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.recur-status {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; padding: 2px 8px; border: 1px solid;
+}
+.recur-status.active { color: var(--fox-bright); border-color: var(--fox-dark); }
+.recur-status.paused { color: var(--text-dim); border-color: var(--border2); }
+.recur-btns { display: flex; gap: 5px; }
+
+/* Recurring form */
+.day-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.day-toggle {
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; padding: 5px 10px; border: 1px solid var(--border2);
+  background: none; color: var(--text-dim); cursor: pointer;
+  text-transform: uppercase; transition: all 0.15s; border-radius: 2px;
+}
+.day-toggle.sel { background: var(--gold-dim); border-color: var(--gold); color: var(--gold-bright); }
+
+.freq-row { display: flex; gap: 10px; margin-bottom: 4px; }
+.freq-opt {
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 2px; padding: 6px 14px; border: 1px solid var(--border2);
+  background: none; color: var(--text-dim); cursor: pointer;
+  text-transform: uppercase; transition: all 0.15s;
+}
+.freq-opt.sel { border-color: var(--gold-dim); color: var(--gold-bright); background: rgba(200,160,48,0.08); }
+
+.recur-next-badge {
+  font-family: 'Cinzel', serif; font-size: 9px; color: var(--gold);
+  letter-spacing: 1px; padding: 2px 0;
+}
+
+/* ===== TEMPLATE LIBRARY ===== */
+.tpl-search {
+  width: 100%; background: var(--panel2); border: 1px solid var(--border2);
+  color: var(--text); padding: 10px 14px; font-family: 'Crimson Pro', serif;
+  font-size: 15px; outline: none; margin-bottom: 14px;
+  transition: border-color 0.2s;
+}
+.tpl-search:focus { border-color: var(--gold-dim); }
+.tpl-search::placeholder { color: var(--text-dim); }
+
+.tpl-category { margin-bottom: 20px; }
+.tpl-cat-label {
+  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 4px;
+  text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.tpl-cat-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.tpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tpl-card {
+  background: var(--panel2); border: 1px solid var(--border);
+  padding: 10px 12px; cursor: pointer; transition: all 0.15s;
+  position: relative;
+}
+.tpl-card:hover { border-color: var(--gold-dim); background: rgba(200,160,48,0.05); }
+.tpl-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.tpl-card-emoji { font-size: 18px; flex-shrink: 0; }
+.tpl-card-name { font-family: 'Cinzel', serif; font-size: 11px; color: var(--cream); line-height: 1.2; }
+.tpl-card-meta { font-family: 'Cinzel', serif; font-size: 8px; color: var(--text-dim); letter-spacing: 1px; }
+.tpl-card-pts { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); position: absolute; top: 8px; right: 10px; }
+
+/* Add-quest mode switcher */
+.add-mode-tabs {
+  display: flex; border: 1px solid var(--border2); margin-bottom: 18px; overflow: hidden;
+}
+.add-mode-tab {
+  flex: 1; padding: 9px; font-family: 'Cinzel', serif; font-size: 9px;
+  font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  text-align: center; cursor: pointer; color: var(--text-dim);
+  background: none; border: none; transition: all 0.2s;
+}
+.add-mode-tab.active { background: var(--gold-dim); color: var(--gold-bright); }
+.add-mode-panel { display: none; }
+.add-mode-panel.active { display: block; }
+
+/* Quick-post confirm bar */
+.tpl-post-bar {
+  display: none; background: var(--panel2); border: 1px solid var(--gold-dim);
+  padding: 12px 14px; margin-bottom: 14px; align-items: center; gap: 12px;
+  flex-wrap: wrap;
+}
+.tpl-post-bar.visible { display: flex; }
+.tpl-post-bar-name { font-family: 'Cinzel', serif; font-size: 12px; color: var(--cream); flex: 1; min-width: 120px; }
+.tpl-post-player { display: flex; gap: 6px; }
+.tpl-post-p-btn {
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 2px; padding: 6px 14px; border: 1px solid; background: none;
+  cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+}
+.tpl-post-p-btn.fox { color: var(--fox-bright); border-color: var(--fox-dark); }
+.tpl-post-p-btn.fox:hover { background: var(--fox-primary); color: #000; }
+.tpl-post-p-btn.forest { color: var(--forest-bright); border-color: var(--forest-dark); }
+.tpl-post-p-btn.forest:hover { background: var(--forest-primary); color: #000; }
+.tpl-post-p-btn.both { color: var(--gold-bright); border-color: var(--gold-dim); }
+.tpl-post-p-btn.both:hover { background: var(--gold); color: #000; }
+
+.empty-st { text-align: center; padding: 36px 20px; color: var(--text-dim); }
+.empty-ico { font-size: 38px; margin-bottom: 10px; }
+.empty-txt { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; }
+
+@keyframes fadeDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:var(--bg)} ::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* =============================================
+   iPad layout — home + board screens
+   Target: 768px–1024px, touch-first, landscape ok
+   ============================================= */
+
+/* iPad portrait & landscape: side-by-side hero cards, bigger everything */
+@media (min-width: 640px) {
+  /* Home */
+  #home { padding: 48px 40px 60px; justify-content: center; min-height: 100vh; }
+  .hero-banner { margin-bottom: 48px; }
+  .hero-crest { font-size: 72px; margin-bottom: 18px; }
+  .hero-title { font-size: 52px; }
+  .hero-sub { font-size: 12px; letter-spacing: 6px; }
+
+  .player-cards { gap: 28px; max-width: 760px; flex-wrap: nowrap; }
+  .player-card { width: 340px; flex-shrink: 1; }
+  .player-card:hover { transform: translateY(-8px); }
+  .avatar-ring { width: 116px; height: 116px; }
+  .avatar-placeholder-icon { font-size: 46px; }
+  .card-name { font-size: 28px; padding-top: 18px; }
+  .card-rank { font-size: 11px; padding-bottom: 18px; }
+  .stat-lbl { font-size: 11px; }
+  .stat-val { font-size: 22px; }
+  .stat-val.gold { font-size: 20px; }
+  .xp-bar { height: 6px; margin-bottom: 12px; }
+  .card-cta { font-size: 12px; letter-spacing: 5px; padding: 15px 20px; }
+  .portal-link { font-size: 11px; letter-spacing: 5px; padding: 12px 28px; margin-top: 36px; }
+
+  /* Board */
+  .board-header { padding: 16px 28px; }
+  .board-hdr-avatar { width: 48px; height: 48px; }
+  .board-pname { font-size: 24px; }
+  .board-psub { font-size: 11px; letter-spacing: 4px; }
+  .hdr-pts { font-size: 22px; }
+  .hdr-money { font-size: 13px; }
+  .back-btn { font-size: 10px; padding: 8px 16px; }
+
+  /* 3-column quest grid on iPad */
+  .bounty-grid { padding: 28px; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .bc-icon { height: 120px; font-size: 56px; }
+  .bc-title { font-size: 17px; }
+  .bc-desc { font-size: 15px; }
+  .bc-pts { font-size: 24px; }
+  .claim-btn { font-size: 10px; letter-spacing: 3px; padding: 10px 18px; }
+
+  /* Bigger touch targets for bounty cards */
+  .bounty-card { min-height: 280px; }
+}
+
+/* iPad landscape: full use of width */
+@media (min-width: 1024px) {
+  .bounty-grid { grid-template-columns: repeat(4, 1fr); padding: 32px; }
+  .player-cards { max-width: 860px; }
+  .player-card { width: 380px; }
+}
+
+/* =============================================
+   Android phone layout — admin screen only
+   Target: 360px–480px, thumb-zone aware
+   ============================================= */
+
+/* Admin on small screens: bottom tabs, thumb-friendly */
+@media (max-width: 639px) {
+  /* Move admin tabs to bottom, make them bigger for thumbs */
+  #admin { flex-direction: column; }
+
+  .admin-header { padding: 12px 14px; }
+  .admin-ttl { font-size: 15px; }
+
+  /* Bottom tab bar */
+  .admin-tabs {
+    order: 10; /* push to bottom of flex column */
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--panel);
+    border-top: 2px solid var(--border2);
+    border-bottom: none;
+    padding: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+  }
+
+  .a-tab {
+    padding: 10px 4px 12px;
+    font-size: 7.5px;
+    letter-spacing: 0;
+    text-align: center;
+    border-bottom: none;
+    border-top: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .a-tab.active {
+    border-top-color: var(--gold);
+    background: rgba(200,160,48,0.06);
+  }
+
+  /* Add icons to tabs on mobile */
+  .a-tab:nth-child(1)::before { content: '📋'; font-size: 16px; display: block; }
+  .a-tab:nth-child(2)::before { content: '⚔️'; font-size: 16px; display: block; }
+  .a-tab:nth-child(3)::before { content: '⏰'; font-size: 16px; display: block; }
+  .a-tab:nth-child(4)::before { content: '🏆'; font-size: 16px; display: block; }
+  .a-tab:nth-child(5)::before { content: '➕'; font-size: 16px; display: block; }
+
+  /* Pad body so content doesn't hide under bottom tabs */
+  .admin-body { padding: 14px 14px 88px; }
+
+  /* Bigger tap targets throughout admin on mobile */
+  .app-btn, .rej-btn { padding: 10px 18px; font-size: 11px; }
+  .tog-b, .del-b { padding: 6px 12px; font-size: 9px; }
+  .pend-card { padding: 12px; gap: 12px; }
+  .pend-thumb { width: 80px; height: 80px; }
+  .p-name { font-size: 14px; }
+  .p-pts { font-size: 16px; }
+
+  /* Manage rows bigger for thumb */
+  .mgr { padding: 12px; }
+  .mgr-emoji { font-size: 24px; }
+  .mgr-name { font-size: 15px; }
+
+  /* Score grid single column */
+  .score-grid { grid-template-columns: 1fr; gap: 12px; }
+  .sb-pts { font-size: 48px; }
+
+  /* Forms full width */
+  .form-row { grid-template-columns: 1fr; }
+  .f-input, .f-select, .f-textarea { font-size: 16px; padding: 12px 14px; } /* 16px prevents iOS zoom */
+  .post-btn, .save-btn { padding: 16px; font-size: 12px; }
+
+  /* Template grid single column on phone */
+  .tpl-grid { grid-template-columns: 1fr; }
+  .tpl-card { padding: 12px 14px; }
+  .tpl-card-name { font-size: 13px; }
+
+  /* Recurring form adjustments */
+  .day-picker { gap: 8px; }
+  .day-toggle { padding: 8px 12px; font-size: 10px; }
+  .freq-opt { padding: 8px 16px; font-size: 10px; }
+
+  /* Add mode tabs bigger */
+  .add-mode-tab { padding: 12px; font-size: 10px; }
+
+  /* Sections */
+  .sec-hdr { margin-top: 18px; }
+  .sec-ttl { font-size: 14px; }
+
+  /* Reset buttons */
+  .rst-btn { padding: 10px 16px; font-size: 10px; }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .a-tab { font-size: 6.5px; }
+  .a-tab:nth-child(1)::before,
+  .a-tab:nth-child(2)::before,
+  .a-tab:nth-child(3)::before,
+  .a-tab:nth-child(4)::before,
+  .a-tab:nth-child(5)::before { font-size: 14px; }
+  .admin-body { padding-bottom: 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home" class="screen active">
+  <div class="hero-banner">
+    <span class="hero-crest">⚔️</span>
+    <div class="hero-title">Hero Bounty Board</div>
+    <div class="hero-divider"><div class="hdl"></div><div class="hdg">✦</div><div class="hdl"></div></div>
+    <div class="hero-sub">Choose Your Hero · Complete Quests · Earn Glory</div>
+  </div>
+
+  <div class="player-cards">
+    <!-- FOX -->
+    <div class="player-card fox" id="card-fox" onclick="enterBoard('fox')">
+      <div class="card-top-bar"></div>
+      <div class="card-avatar-section" onclick="event.stopPropagation()">
+        <div class="avatar-ring fox" onclick="triggerAvatar('fox')">
+          <div class="avatar-inner">
+            <span class="avatar-placeholder-icon" id="fox-ph">🦸</span>
+            <img class="avatar-photo" id="fox-photo" src="" alt="Fox">
+          </div>
+        </div>
+        <input type="file" accept="image/*" class="avatar-upload-input" id="fox-file" onchange="uploadAvatar('fox',this)">
+        <div class="avatar-hint" id="fox-hint" onclick="triggerAvatar('fox')">✦ Tap to add your photo</div>
+      </div>
+      <div class="card-name fox">Fox</div>
+      <div class="card-rank" id="fox-rank-title">Peasant · Level 1</div>
+      <div class="card-sep"></div>
+      <div class="card-stats">
+        <div class="stat-row"><span class="stat-lbl">Experience</span><span class="stat-val" id="fox-pts-h">0</span></div>
+        <div class="level-bar-wrap" onclick="event.stopPropagation(); openLevelModal('fox')" title="Tap to see level progression">
+          <div class="level-bar-labels">
+            <span class="level-bar-lv" id="fox-lv-label">LV 1</span>
+            <span class="level-bar-next" id="fox-lv-next">500 XP to next rank</span>
+          </div>
+          <div class="xp-bar fox"><div class="xp-fill" id="fox-xp" style="width:0%"></div></div>
+          <div class="level-bar-hint">✦ Tap to view all ranks</div>
+        </div>
+        <div class="stat-row"><span class="stat-lbl">Points Earned</span><span class="stat-val" id="fox-money-h">0</span></div>
+        <div class="stat-row"><span class="stat-lbl">Quests Cleared</span><span class="stat-val" id="fox-cleared-h">0</span></div>
+      </div>
+      <div class="card-cta fox">⚔️ Enter the Board</div>
+    </div>
+
+    <!-- FOREST -->
+    <div class="player-card forest" id="card-forest" onclick="enterBoard('forest')">
+      <div class="card-top-bar"></div>
+      <div class="card-avatar-section" onclick="event.stopPropagation()">
+        <div class="avatar-ring forest" onclick="triggerAvatar('forest')">
+          <div class="avatar-inner">
+            <span class="avatar-placeholder-icon" id="forest-ph">🦸</span>
+            <img class="avatar-photo" id="forest-photo" src="" alt="Forest">
+          </div>
+        </div>
+        <input type="file" accept="image/*" class="avatar-upload-input" id="forest-file" onchange="uploadAvatar('forest',this)">
+        <div class="avatar-hint" id="forest-hint" onclick="triggerAvatar('forest')">✦ Tap to add your photo</div>
+      </div>
+      <div class="card-name forest">Forest</div>
+      <div class="card-rank" id="forest-rank-title">Peasant · Level 1</div>
+      <div class="card-sep"></div>
+      <div class="card-stats">
+        <div class="stat-row"><span class="stat-lbl">Experience</span><span class="stat-val" id="forest-pts-h">0</span></div>
+        <div class="level-bar-wrap" onclick="event.stopPropagation(); openLevelModal('forest')" title="Tap to see level progression">
+          <div class="level-bar-labels">
+            <span class="level-bar-lv" id="forest-lv-label">LV 1</span>
+            <span class="level-bar-next" id="forest-lv-next">500 XP to next rank</span>
+          </div>
+          <div class="xp-bar forest"><div class="xp-fill" id="forest-xp" style="width:0%"></div></div>
+          <div class="level-bar-hint">✦ Tap to view all ranks</div>
+        </div>
+        <div class="stat-row"><span class="stat-lbl">Points Earned</span><span class="stat-val" id="forest-money-h">0</span></div>
+        <div class="stat-row"><span class="stat-lbl">Quests Cleared</span><span class="stat-val" id="forest-cleared-h">0</span></div>
+      </div>
+      <div class="card-cta forest">⚔️ Enter the Board</div>
+    </div>
+  </div>
+
+  <div class="portal-link" onclick="showLock()">🏰 Commander's Portal</div>
+</div>
+
+<!-- BOARD -->
+<div id="board" class="screen">
+  <div class="board-header" id="board-hdr">
+    <button class="back-btn" onclick="goHome()">◀ Back</button>
+    <img class="board-hdr-avatar" id="bha" src="" alt="" style="display:none">
+    <div class="board-title-wrap">
+      <div class="board-pname" id="bpn">Fox</div>
+      <div class="board-psub">Active Quests</div>
+    </div>
+    <div class="hdr-score">
+      <div class="hdr-pts" id="bpts">0 pts</div>
+      <div class="hdr-money" id="bmoney">$0.00</div>
+    </div>
+  </div>
+  <div class="bounty-grid" id="bounty-grid"></div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin" class="screen">
+  <div class="admin-header">
+    <button class="back-btn" onclick="goHome()">◀ Back</button>
+    <div class="admin-ttl">🏰 Command Portal</div>
+    <div style="margin-left:auto;font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;" onclick="goHome()">Lock</div>
+  </div>
+  <div class="admin-tabs">
+    <div class="a-tab active" onclick="switchTab('approvals')">Approvals <span id="badge" style="background:var(--red);color:#fff;padding:1px 6px;font-size:9px;margin-left:3px;border-radius:2px;display:none;font-family:'Cinzel',serif;"></span></div>
+    <div class="a-tab" onclick="switchTab('manage')">Manage</div>
+    <div class="a-tab" onclick="switchTab('recurring')">Recurring</div>
+    <div class="a-tab" onclick="switchTab('scores')">Scores</div>
+    <div class="a-tab" onclick="switchTab('add')">Add Quest</div>
+  </div>
+  <div class="admin-body">
+    <div class="tab-pane active" id="pane-approvals"><div id="approvals-list"></div></div>
+    <div class="tab-pane" id="pane-manage">
+      <div class="sec-hdr"><div class="sec-ttl fox-s">🟢 Fox's Quests</div><button class="sec-btn fox-b" onclick="switchTab('add');setP('fox')">+ Add</button></div>
+      <div id="mgr-fox"></div>
+      <div class="sec-hdr"><div class="sec-ttl forest-s">🟠 Forest's Quests</div><button class="sec-btn forest-b" onclick="switchTab('add');setP('forest')">+ Add</button></div>
+      <div id="mgr-forest"></div>
+    </div>
+    <div class="tab-pane" id="pane-scores">
+      <div class="score-grid">
+        <div class="score-box fox"><div class="sb-name">🟢 Fox</div><div class="sb-pts" id="s-fox-pts">0</div><div class="sb-money" id="s-fox-money">$0.00</div><div class="sb-lbl">Total Gold</div></div>
+        <div class="score-box forest"><div class="sb-name">🟠 Forest</div><div class="sb-pts" id="s-forest-pts">0</div><div class="sb-money" id="s-forest-money">$0.00</div><div class="sb-lbl">Total Gold</div></div>
+      </div>
+      <div class="reset-row">
+        <button class="rst-btn" onclick="resetScores('fox')">Reset Fox</button>
+        <button class="rst-btn" onclick="resetScores('forest')">Reset Forest</button>
+        <button class="rst-btn" onclick="resetScores('all')">Reset All</button>
+      </div>
+      <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">Quest History</div>
+      <div id="hist-list"></div>
+
+      <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);">
+        <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">Change Passcode</div>
+        <div class="form-group"><label class="form-lbl">Current Passcode</label><input class="f-input" id="pin-current" type="password" maxlength="8" placeholder="Current code"></div>
+        <div class="form-group"><label class="form-lbl">New Passcode</label><input class="f-input" id="pin-new" type="password" maxlength="8" placeholder="New code (min 4 digits)"></div>
+        <div class="form-group"><label class="form-lbl">Confirm New Passcode</label><input class="f-input" id="pin-confirm" type="password" maxlength="8" placeholder="Repeat new code"></div>
+        <button class="post-btn" style="background:var(--border2);color:var(--text);" onclick="changePasscode()">🔒 Update Passcode</button>
+      </div>
+    </div>
+    <!-- RECURRING PANE -->
+    <div class="tab-pane" id="pane-recurring">
+      <div class="sec-hdr" style="margin-top:0">
+        <div class="sec-ttl" style="font-size:14px;color:var(--gold-bright)">⏰ Recurring Quests</div>
+        <button class="sec-btn" style="color:var(--gold);border-color:var(--gold-dim);" onclick="openNewRecurring()">+ New</button>
+      </div>
+      <div id="recur-list"></div>
+
+      <!-- New recurring form (hidden by default) -->
+      <div id="recur-form" style="display:none; margin-top:16px; padding:16px; border:1px solid var(--border2); background:var(--panel2);">
+        <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;">New Recurring Quest</div>
+        <div class="form-group"><label class="form-lbl">Assign To</label><select class="f-select" id="rc-player"><option value="fox">🟢 Fox</option><option value="forest">🟠 Forest</option><option value="both">👥 Both Heroes</option></select></div>
+        <div class="form-group"><label class="form-lbl">Quest Title</label><input class="f-input" id="rc-title" type="text" placeholder="e.g. Morning Routine"></div>
+        <div class="form-group"><label class="form-lbl">Description</label><textarea class="f-textarea" id="rc-desc" placeholder="What needs to be done..." style="min-height:60px"></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-lbl">Points</label><input class="f-input" id="rc-pts" type="number" placeholder="80" min="10" step="10"></div>
+          <div class="form-group"><label class="form-lbl">Difficulty</label><select class="f-select" id="rc-diff"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
+        </div>
+        <div class="form-group"><label class="form-lbl">Icon</label><input class="f-input" id="rc-emoji" type="text" placeholder="☀️" maxlength="4"></div>
+        <div class="form-group">
+          <label class="form-lbl">Frequency</label>
+          <div class="freq-row">
+            <button class="freq-opt sel" id="freq-daily" onclick="setFreq('daily')">Daily</button>
+            <button class="freq-opt" id="freq-weekly" onclick="setFreq('weekly')">Weekly</button>
+          </div>
+        </div>
+        <div class="form-group" id="day-picker-wrap">
+          <label class="form-lbl">Active Days</label>
+          <div class="day-picker">
+            <button class="day-toggle sel" data-day="0" onclick="toggleDay(this)">Sun</button>
+            <button class="day-toggle sel" data-day="1" onclick="toggleDay(this)">Mon</button>
+            <button class="day-toggle sel" data-day="2" onclick="toggleDay(this)">Tue</button>
+            <button class="day-toggle sel" data-day="3" onclick="toggleDay(this)">Wed</button>
+            <button class="day-toggle sel" data-day="4" onclick="toggleDay(this)">Thu</button>
+            <button class="day-toggle sel" data-day="5" onclick="toggleDay(this)">Fri</button>
+            <button class="day-toggle" data-day="6" onclick="toggleDay(this)">Sat</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="post-btn" style="flex:1" onclick="saveRecurring()">⏰ Save Recurring Quest</button>
+          <button class="rst-btn" style="border-color:var(--border2);color:var(--text-dim)" onclick="closeRecurForm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD QUEST PANE -->
+    <div class="tab-pane" id="pane-add">
+      <div class="add-mode-tabs">
+        <button class="add-mode-tab active" id="mode-tab-lib" onclick="setAddMode('lib')">📚 From Library</button>
+        <button class="add-mode-tab" id="mode-tab-custom" onclick="setAddMode('custom')">✏️ Custom Quest</button>
+      </div>
+
+      <!-- LIBRARY MODE -->
+      <div class="add-mode-panel active" id="mode-lib">
+        <div class="tpl-post-bar" id="tpl-post-bar">
+          <div class="tpl-post-bar-name" id="tpl-post-name"></div>
+          <div class="tpl-post-player">
+            <button class="tpl-post-p-btn fox" onclick="postTemplate('fox')">Fox</button>
+            <button class="tpl-post-p-btn forest" onclick="postTemplate('forest')">Forest</button>
+            <button class="tpl-post-p-btn both" onclick="postTemplate('both')">Both</button>
+          </div>
+        </div>
+        <input class="tpl-search" id="tpl-search" type="text" placeholder="Search chores..." oninput="renderTemplates()">
+        <div id="tpl-library"></div>
+      </div>
+
+      <!-- CUSTOM MODE -->
+      <div class="add-mode-panel" id="mode-custom">
+        <div class="form-group"><label class="form-lbl">Assign To</label><select class="f-select" id="new-player"><option value="fox">🟢 Fox</option><option value="forest">🟠 Forest</option><option value="both">👥 Both Heroes</option></select></div>
+        <div class="form-group"><label class="form-lbl">Quest Title</label><input class="f-input" id="new-title" type="text" placeholder="e.g. Chamber of Cleanliness"></div>
+        <div class="form-group"><label class="form-lbl">Quest Description</label><textarea class="f-textarea" id="new-desc" placeholder="Describe exactly what must be done..."></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-lbl">Points Reward</label><input class="f-input" id="new-pts" type="number" placeholder="100" min="10" step="10"></div>
+          <div class="form-group"><label class="form-lbl">Difficulty</label><select class="f-select" id="new-diff"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
+        </div>
+        <div class="form-group"><label class="form-lbl">Icon (Emoji)</label><input class="f-input" id="new-emoji" type="text" placeholder="🧹" maxlength="4"></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px 0 2px">
+          <input type="checkbox" id="save-to-lib" style="width:16px;height:16px;accent-color:var(--gold)">
+          <label for="save-to-lib" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">Also save to template library</label>
+        </div>
+        <button class="post-btn" onclick="addBounty()">⚔️ Post Quest</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LEVEL PROGRESSION MODAL -->
+<div class="modal-overlay" id="level-modal">
+  <div class="modal">
+    <div class="modal-bar" id="lm-bar"></div>
+    <div class="modal-head">
+      <div class="modal-htitle">⚔️ Hero Progression</div>
+      <button class="modal-x" onclick="closeModal('level-modal')">✕</button>
+    </div>
+    <div class="lm-hero-banner">
+      <div class="lm-player-badge" id="lm-badge">
+        <span id="lm-badge-icon"></span>
+        <span class="lm-badge-name" id="lm-badge-name"></span>
+      </div>
+      <div class="lm-current-rank" id="lm-current-rank"></div>
+      <div class="lm-current-lore" id="lm-current-lore"></div>
+      <div class="lm-progress-bar-wrap">
+        <div class="lm-prog-labels">
+          <span id="lm-prog-cur"></span>
+          <span id="lm-prog-nxt"></span>
+        </div>
+        <div class="lm-prog-bar"><div class="lm-prog-fill" id="lm-prog-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="lm-rank-list" id="lm-rank-list"></div>
+  </div>
+</div>
+
+<!-- CLAIM MODAL -->
+<div class="modal-overlay" id="claim-modal">
+  <div class="modal" id="cm-box">
+    <div class="modal-bar"></div>
+    <div class="modal-head"><div class="modal-htitle">Claim Quest</div><button class="modal-x" onclick="closeModal('claim-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="cm-bname" id="cm-title"></div>
+      <div class="cm-bdesc" id="cm-desc"></div>
+      <div class="cm-section-lbl">✦ Submit Your Proof Photo</div>
+      <img class="cm-preview" id="cm-prev" src="" alt="">
+      <div class="cm-drop" id="cm-drop">
+        <input type="file" accept="image/*" capture="environment" id="cm-file" onchange="handleProof(this)">
+        <div class="cm-drop-icon">📷</div>
+        <div class="cm-drop-text">Tap to photograph your completed quest</div>
+      </div>
+      <div class="cm-reward" id="cm-reward"></div>
+      <button class="cm-submit" id="cm-submit" onclick="submitBounty()">⚡ Submit for Approval</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO VIEW -->
+<div class="modal-overlay" id="photo-view-modal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-htitle">Proof Photo</div><button class="modal-x" onclick="closeModal('photo-view-modal')">✕</button></div>
+    <img id="pv-img" src="" alt="Proof">
+  </div>
+</div>
+
+<!-- LOCK -->
+<div id="lockscreen">
+  <div class="lk-icon">🏰</div>
+  <div class="lk-title">Commander's Portal</div>
+  <div class="lk-sub">Enter your secret code</div>
+  <input class="lk-input" id="pin-input" type="password" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter')checkPin()">
+  <button class="lk-btn" onclick="checkPin()">Enter</button>
+  <div class="lk-cancel" onclick="document.getElementById('lockscreen').style.display='none'">Cancel</div>
+</div>
+
+  <!-- Loading overlay -->
+  <div id="loading-overlay" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+    <div style="font-size:48px;animation:floatCrest 2s ease-in-out infinite;">⚔️</div>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--gold-bright);">Hero Bounty Board</div>
+    <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase;" id="loading-msg">Connecting to the realm...</div>
+  </div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ============================================================
+//  FIREBASE CONFIG — replace with your own values from the
+//  Firebase console (Project Settings > Your apps > SDK setup)
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDxg6pbdCK7Haey1Eaj_sQJGYtbYrB4vNQ",
+  authDomain: "chore-bounty-board.firebaseapp.com",
+  projectId: "chore-bounty-board",
+  storageBucket: "chore-bounty-board.firebasestorage.app",
+  messagingSenderId: "701109747341",
+  appId: "1:701109747341:web:989c8a4d79c7e58e586cc4"
+};
+
+// Firebase refs (set after init)
+let db = null;
+let stateRef = null;
+let saveTimeout = null;
+
+// ============================================================
+//  STATE
+// ============================================================
+let PIN = '1234'; // loaded from Firebase on start
+const PPD = 100;
+
+let S = {
+  fox:    { pts:0, cleared:0, avatar:'' },
+  forest: { pts:0, cleared:0, avatar:'' },
+  bounties: [], subs: [], history: [],
+  recurring: [], customTemplates: [],
+  pin: '1234'
+};
+let curP = 'fox', curBid = null, curPhoto = null;
+
+const DEFAULTS = [
+  {id:'b1',player:'fox',   title:'Chamber of Cleanliness', desc:'Clean your bedroom — pick up all clothes, make your bed, and tidy your desk. Leave no mess behind!',     pts:100,diff:'easy',  emoji:'🛏️',active:true},
+  {id:'b2',player:'fox',   title:'The Dish Dungeon',        desc:'Rinse all dirty dishes and load the dishwasher completely. Start the cycle when done.',                    pts:80, diff:'easy',  emoji:'🍽️',active:true},
+  {id:'b3',player:'fox',   title:'Trash Titan',             desc:'Empty every trash can in the house, replace the bags, and bring the big bins to the curb.',                pts:120,diff:'medium',emoji:'🗑️',active:true},
+  {id:'b4',player:'forest',title:'The Leaf Conquest',       desc:'Rake all the leaves in the front yard into a pile and bag them up completely. No leaf left behind!',      pts:200,diff:'hard',  emoji:'🍂',active:true},
+  {id:'b5',player:'forest',title:'Vacuum Crusade',          desc:'Vacuum the entire living room and hallway. Move the small furniture to get underneath.',                   pts:150,diff:'medium',emoji:'🧹',active:true},
+  {id:'b6',player:'forest',title:'Table of Champions',      desc:'Wipe down the kitchen table and all countertops with a damp cloth until they gleam.',                     pts:80, diff:'easy',  emoji:'✨',active:true},
+];
+
+// ============================================================
+//  FIREBASE INIT & SYNC
+// ============================================================
+function initFirebase() {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    stateRef = db.ref('state');
+
+    // Listen for real-time changes from any device
+    stateRef.on('value', snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        S = data;
+        if (!S.recurring)       S.recurring = [];
+        if (!S.customTemplates) S.customTemplates = [];
+        if (!S.pin)             S.pin = '1234';
+        PIN = S.pin;
+      } else {
+        // First time — write defaults
+        S.bounties = DEFAULTS;
+        S.pin = '1234';
+        PIN = '1234';
+        pushToFirebase();
+      }
+      processRecurring();
+      restoreAvatars();
+      updateHome();
+      hideLoading();
+    }, err => {
+      // Firebase failed — fall back to localStorage
+      console.warn('Firebase error, using localStorage:', err);
+      document.getElementById('loading-msg').textContent = 'Offline — using local data';
+      fallbackToLocal();
+    });
+
+    // Timeout: if Firebase hasn't responded in 6s, fall back
+    setTimeout(() => {
+      if (document.getElementById('loading-overlay').style.display !== 'none') {
+        document.getElementById('loading-msg').textContent = 'Slow connection — using local data';
+        fallbackToLocal();
+      }
+    }, 6000);
+
+  } catch(e) {
+    console.warn('Firebase init failed:', e);
+    fallbackToLocal();
+  }
+}
+
+function fallbackToLocal() {
+  const sv = localStorage.getItem('hbb_v2');
+  if (sv) { try { S = JSON.parse(sv); } catch(e) {} }
+  else { S.bounties = DEFAULTS; }
+  if (!S.recurring)       S.recurring = [];
+  if (!S.customTemplates) S.customTemplates = [];
+  if (!S.pin)             S.pin = '1234';
+  PIN = S.pin;
+  processRecurring();
+  restoreAvatars();
+  updateHome();
+  hideLoading();
+}
+
+function hideLoading() {
+  const el = document.getElementById('loading-overlay');
+  el.style.transition = 'opacity 0.4s';
+  el.style.opacity = '0';
+  setTimeout(() => el.style.display = 'none', 400);
+}
+
+// Debounced save — batches rapid changes into one write
+function save() {
+  // Always mirror to localStorage as offline backup
+  localStorage.setItem('hbb_v2', JSON.stringify(S));
+  // Debounce Firebase writes (300ms) to avoid hammering on rapid changes
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(pushToFirebase, 300);
+}
+
+function pushToFirebase() {
+  if (!stateRef) return;
+  stateRef.set(S).catch(err => console.warn('Firebase write failed:', err));
+}
+
+function init() {
+  initFirebase();
+}
+
+// ============================================================
+//  CHANGE PASSCODE
+// ============================================================
+function changePasscode() {
+  const cur     = document.getElementById('pin-current').value;
+  const nw      = document.getElementById('pin-new').value;
+  const confirm = document.getElementById('pin-confirm').value;
+  if (cur !== PIN)       { showNotif('Current passcode is wrong'); return; }
+  if (nw.length < 4)     { showNotif('New passcode must be 4+ digits'); return; }
+  if (nw !== confirm)    { showNotif('New passcodes do not match'); return; }
+  S.pin = nw; PIN = nw;
+  save();
+  ['pin-current','pin-new','pin-confirm'].forEach(id => document.getElementById(id).value = '');
+  showNotif('🔒 Passcode updated!');
+}
+
+function restoreAvatars() {
+  ['fox','forest'].forEach(p => {
+    if (S[p].avatar) showAvatar(p, S[p].avatar);
+  });
+}
+
+function showAvatar(p, src) {
+  document.getElementById(`${p}-photo`).src = src;
+  document.getElementById(`${p}-photo`).style.display = 'block';
+  document.getElementById(`${p}-ph`).style.display = 'none';
+  document.getElementById(`${p}-hint`).textContent = '✦ Tap to change photo';
+}
+
+function triggerAvatar(p) { document.getElementById(`${p}-file`).click(); }
+
+function uploadAvatar(p, input) {
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    S[p].avatar = e.target.result;
+    save();
+    showAvatar(p, e.target.result);
+    showNotif('✦ Hero portrait set!');
+  };
+  r.readAsDataURL(file);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goHome() { updateHome(); showScreen('home'); }
+
+function enterBoard(p) {
+  curP = p;
+  document.getElementById('board-hdr').className = 'board-header ' + p;
+  document.getElementById('bpn').textContent = p === 'fox' ? 'Fox' : 'Forest';
+  const bha = document.getElementById('bha');
+  if (S[p].avatar) { bha.src = S[p].avatar; bha.style.display = 'block'; }
+  else { bha.style.display = 'none'; }
+  renderBoard();
+  showScreen('board');
+}
+
+
+function renderBoard() {
+  const p = curP, pts = S[p].pts;
+  document.getElementById('bpts').textContent = pts.toLocaleString() + ' pts';
+  document.getElementById('bmoney').textContent = '$' + (pts/PPD).toFixed(2);
+  const grid = document.getElementById('bounty-grid');
+  const list = S.bounties.filter(b => b.player === p && b.active);
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-st"><div class="empty-ico">📜</div><div class="empty-txt">No quests on the board yet</div></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(b => {
+    const sub = S.subs.find(s => s.bountyId === b.id && s.player === p);
+    const done = sub && sub.status === 'approved';
+    const pend = sub && sub.status === 'pending';
+    const cls = done ? 'done' : pend ? 'pend' : '';
+    const rib = done ? 'COMPLETE' : pend ? 'PENDING' : '';
+    const can = !done && !pend;
+    return `<div class="bounty-card ${p} ${cls}" onclick="${can?`openClaim('${b.id}')`:''}" >
+      <div class="bc-top"></div>
+      <div class="bc-ribbon">${rib}</div>
+      <div class="bc-icon">${b.emoji||'⚔️'}</div>
+      <div class="bc-body">
+        <div class="bc-meta"><span class="diff-tag diff-${b.diff}">${b.diff}</span></div>
+        <div class="bc-title">${b.title}</div>
+        <div class="bc-desc">${b.desc}</div>
+        <div class="bc-footer">
+          <div><div class="bc-pts">${b.pts}</div><div class="bc-money">points · $${(b.pts/PPD).toFixed(2)}</div></div>
+          ${can?`<button class="claim-btn ${p}" onclick="event.stopPropagation();openClaim('${b.id}')">Claim</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openClaim(id) {
+  const b = S.bounties.find(x => x.id === id); if (!b) return;
+  curBid = id; curPhoto = null;
+  document.getElementById('cm-title').textContent = b.emoji + ' ' + b.title;
+  document.getElementById('cm-desc').textContent = b.desc;
+  document.getElementById('cm-reward').textContent = `✦ Reward: ${b.pts} Points ($${(b.pts/PPD).toFixed(2)})`;
+  document.getElementById('cm-box').className = 'modal ' + curP + '-m';
+  document.getElementById('cm-prev').style.display = 'none';
+  document.getElementById('cm-prev').src = '';
+  document.getElementById('cm-drop').classList.remove('has-file');
+  document.getElementById('cm-file').value = '';
+  document.getElementById('cm-submit').classList.remove('ready');
+  document.getElementById('claim-modal').classList.add('active');
+}
+
+function handleProof(input) {
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    curPhoto = e.target.result;
+    const pr = document.getElementById('cm-prev');
+    pr.src = curPhoto; pr.style.display = 'block';
+    document.getElementById('cm-drop').classList.add('has-file');
+    document.getElementById('cm-submit').classList.add('ready');
+  };
+  r.readAsDataURL(file);
+}
+
+function submitBounty() {
+  if (!curPhoto) return;
+  const b = S.bounties.find(x => x.id === curBid); if (!b) return;
+  S.subs.push({ id:'sub_'+Date.now(), bountyId:curBid, bountyTitle:b.title, player:curP, photo:curPhoto, pts:b.pts, status:'pending', time:new Date().toISOString() });
+  save(); closeModal('claim-modal'); renderBoard();
+  showNotif('⚡ Quest submitted — awaiting approval!');
+  updateBadge();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function showLock() {
+  document.getElementById('lockscreen').style.display = 'flex';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-input').classList.remove('err');
+  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+}
+
+function checkPin() {
+  if (document.getElementById('pin-input').value === PIN) {
+    document.getElementById('lockscreen').style.display = 'none';
+    renderAdmin(); showScreen('admin');
+  } else {
+    document.getElementById('pin-input').classList.add('err');
+    document.getElementById('pin-input').value = '';
+    setTimeout(() => document.getElementById('pin-input').classList.remove('err'), 500);
+  }
+}
+
+// ======= TEMPLATE LIBRARY =======
+const BUILTIN_TEMPLATES = [
+  // Morning & Evening
+  { id:'t1',  cat:'Morning & Evening', emoji:'☀️', title:'Morning Routine',       desc:'Get dressed, brush teeth, make your bed, and eat breakfast before school.',      pts:80,  diff:'easy'   },
+  { id:'t2',  cat:'Morning & Evening', emoji:'🌙', title:'Evening Wind-Down',      desc:'Put away toys, lay out clothes for tomorrow, brush teeth, and get into bed on time.',pts:60, diff:'easy'   },
+  { id:'t3',  cat:'Morning & Evening', emoji:'🎒', title:'Backpack Ready',          desc:'Pack your backpack with everything you need for tomorrow. Check the schedule!',  pts:40,  diff:'easy'   },
+  // Kitchen
+  { id:'t4',  cat:'Kitchen', emoji:'🍽️', title:'Dish Duty',              desc:'Rinse all dirty dishes and load them into the dishwasher. Start the cycle.',    pts:80,  diff:'easy'   },
+  { id:'t5',  cat:'Kitchen', emoji:'🧽', title:'Counter Patrol',          desc:'Wipe down the kitchen counters and table with a damp cloth until they shine.',  pts:70,  diff:'easy'   },
+  { id:'t6',  cat:'Kitchen', emoji:'🥣', title:'Unload Dishwasher',       desc:'Unload the clean dishes from the dishwasher and put everything away properly.',pts:70,  diff:'easy'   },
+  { id:'t7',  cat:'Kitchen', emoji:'🗑️', title:'Kitchen Trash',           desc:'Empty the kitchen trash, put in a new bag, and take the bag to the outside bin.',pts:60, diff:'easy'   },
+  { id:'t8',  cat:'Kitchen', emoji:'🧹', title:'Sweep the Kitchen',       desc:'Sweep the kitchen floor and collect all the dirt into a dustpan and throw it away.',pts:80,diff:'easy' },
+  // Bedroom
+  { id:'t9',  cat:'Bedroom', emoji:'🛏️', title:'Make the Bed',            desc:'Pull up the sheets, arrange the pillows, and make the bed look neat and tidy.', pts:50,  diff:'easy'   },
+  { id:'t10', cat:'Bedroom', emoji:'👕', title:'Laundry Sort',             desc:'Sort your dirty clothes into the hamper and bring it to the laundry room.',    pts:60,  diff:'easy'   },
+  { id:'t11', cat:'Bedroom', emoji:'📚', title:'Bookshelf Tidy',           desc:'Put all books back on the shelf in order and clear the floor around it.',       pts:60,  diff:'easy'   },
+  { id:'t12', cat:'Bedroom', emoji:'🧸', title:'Toy Roundup',              desc:'Pick up every toy off the floor and put them all back where they belong.',      pts:70,  diff:'easy'   },
+  // Living Areas
+  { id:'t13', cat:'Living Areas', emoji:'🧹', title:'Vacuum Living Room',   desc:'Vacuum the entire living room carpet or floor, moving small items to reach underneath.',pts:150,diff:'medium'},
+  { id:'t14', cat:'Living Areas', emoji:'🛋️', title:'Couch Cushion Rescue',  desc:'Take all cushions off the couch, vacuum underneath, fluff cushions, and put them back.',pts:80,diff:'easy'},
+  { id:'t15', cat:'Living Areas', emoji:'👟', title:'Shoe Area Cleanup',     desc:'Pair up all shoes by the door, put them on the rack, and wipe the floor underneath.',pts:70,diff:'easy'},
+  { id:'t16', cat:'Living Areas', emoji:'🪟', title:'Window Wipe-Down',      desc:'Wipe all the low windows and sliding doors with a damp cloth to remove fingerprints.',pts:90,diff:'easy'},
+  // Outdoors
+  { id:'t17', cat:'Outdoors', emoji:'🍂', title:'Leaf Patrol',             desc:'Rake leaves from the front yard into a pile, bag them up, and place bags at the curb.',pts:200,diff:'hard'  },
+  { id:'t18', cat:'Outdoors', emoji:'🌱', title:'Water the Plants',        desc:'Water all the indoor and outdoor plants. Check the soil first — don\'t over-water!',  pts:60, diff:'easy'   },
+  { id:'t19', cat:'Outdoors', emoji:'🚗', title:'Garage Tidy',             desc:'Put bikes back in place, stack anything on the floor, and sweep the garage entrance.',pts:150,diff:'medium'},
+  { id:'t20', cat:'Outdoors', emoji:'🐕', title:'Pet Zone Cleanup',        desc:'Clean up after the pet — pick up toys, refill water bowl, and sweep the feeding area.',pts:80,diff:'easy'},
+  // Trash & Laundry
+  { id:'t21', cat:'Trash & Laundry', emoji:'♻️', title:'Trash Titan',       desc:'Empty all trash cans in the house into one bag and put it in the outside bin.',    pts:120, diff:'medium' },
+  { id:'t22', cat:'Trash & Laundry', emoji:'🧺', title:'Laundry Folder',    desc:'Take the clean laundry from the dryer, fold everything neatly, and put it away.',   pts:130, diff:'medium' },
+  { id:'t23', cat:'Trash & Laundry', emoji:'👚', title:'Put Away Clothes',  desc:'Put all your clean folded clothes away in the right drawers and closet spots.',      pts:70,  diff:'easy'   },
+];
+
+let selectedTemplate = null;
+let curFreq = 'daily';
+
+function switchTab(t) {
+  const tabs = ['approvals','manage','recurring','scores','add'];
+  document.querySelectorAll('.a-tab').forEach((el,i) => el.classList.toggle('active', tabs[i]===t));
+  document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+  document.getElementById('pane-'+t).classList.add('active');
+  if (t==='approvals') renderApprovals();
+  if (t==='manage') renderManage();
+  if (t==='recurring') renderRecurring();
+  if (t==='scores') renderScores();
+  if (t==='add') { renderTemplates(); clearTplBar(); }
+}
+
+function setP(p) { document.getElementById('new-player').value = p; }
+
+function renderAdmin() { renderApprovals(); renderManage(); renderScores(); updateBadge(); }
+
+function updateBadge() {
+  const n = S.subs.filter(s=>s.status==='pending').length;
+  const b = document.getElementById('badge');
+  b.style.display = n>0?'inline':'none'; b.textContent = n;
+}
+
+function renderApprovals() {
+  const el = document.getElementById('approvals-list');
+  const list = S.subs.filter(s=>s.status==='pending');
+  if (!list.length) { el.innerHTML = `<div class="empty-st"><div class="empty-ico">✅</div><div class="empty-txt">No pending quests</div></div>`; return; }
+  el.innerHTML = list.map(s => `
+    <div class="pend-card">
+      <img class="pend-thumb" src="${s.photo}" onclick="viewPhoto('${s.id}')">
+      <div class="pend-info">
+        <div class="pend-meta"><span class="p-tag ${s.player}-tag">${s.player}</span><span class="p-name">${s.bountyTitle}</span></div>
+        <div class="p-pts">✦ ${s.pts} pts · $${(s.pts/PPD).toFixed(2)}</div>
+        <div class="p-time">${new Date(s.time).toLocaleString()}</div>
+        <div class="p-actions">
+          <button class="app-btn" onclick="approve('${s.id}')">✔ Approve</button>
+          <button class="rej-btn" onclick="reject('${s.id}')">✕ Reject</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function approve(id) {
+  const sub = S.subs.find(s=>s.id===id); if (!sub) return;
+  sub.status='approved'; S[sub.player].pts+=sub.pts; S[sub.player].cleared+=1;
+  S.history.unshift({player:sub.player,title:sub.bountyTitle,pts:sub.pts,time:new Date().toISOString()});
+  save(); renderApprovals(); renderScores(); updateBadge(); updateHome();
+  showNotif(`✦ Approved! +${sub.pts} pts for ${sub.player}`);
+}
+
+function reject(id) {
+  const sub = S.subs.find(s=>s.id===id); if (!sub) return;
+  sub.status='rejected'; save(); renderApprovals(); updateBadge();
+  showNotif('Quest rejected — try again!');
+}
+
+function viewPhoto(id) {
+  const sub = S.subs.find(s=>s.id===id); if (!sub) return;
+  document.getElementById('pv-img').src = sub.photo;
+  document.getElementById('photo-view-modal').classList.add('active');
+}
+
+function renderManage() {
+  ['fox','forest'].forEach(p => {
+    const el = document.getElementById('mgr-'+p);
+    const list = S.bounties.filter(b=>b.player===p);
+    if (!list.length) { el.innerHTML=`<div class="empty-st" style="padding:14px"><div class="empty-txt">No quests yet</div></div>`; return; }
+    el.innerHTML = list.map(b=>`
+      <div class="mgr">
+        <div class="mgr-emoji">${b.emoji||'⚔️'}</div>
+        <div class="mgr-info">
+          <div class="mgr-name">${b.title}</div>
+          <div class="mgr-meta">${b.pts} pts · ${b.diff}${b.recurringId?' · 🔁 recurring':''}</div>
+        </div>
+        <div class="mgr-acts">
+          <button class="tog-b ${b.active?'on':''}" onclick="togB('${b.id}')">${b.active?'Active':'Off'}</button>
+          <button class="del-b" onclick="delB('${b.id}')">Del</button>
+        </div>
+      </div>`).join('');
+  });
+}
+
+function togB(id) { const b=S.bounties.find(x=>x.id===id); if(b){b.active=!b.active;save();renderManage();} }
+function delB(id) { if(!confirm('Delete this quest?'))return; S.bounties=S.bounties.filter(x=>x.id!==id); S.subs=S.subs.filter(x=>x.bountyId!==id); save();renderManage(); }
+
+function addBounty() {
+  const player=document.getElementById('new-player').value;
+  const title=document.getElementById('new-title').value.trim();
+  const desc=document.getElementById('new-desc').value.trim();
+  const pts=parseInt(document.getElementById('new-pts').value)||100;
+  const diff=document.getElementById('new-diff').value;
+  const emoji=document.getElementById('new-emoji').value.trim()||'⚔️';
+  const saveLib=document.getElementById('save-to-lib').checked;
+  if(!title){showNotif('Enter a quest title');return;}
+  if(!desc){showNotif('Enter a description');return;}
+  (player==='both'?['fox','forest']:[player]).forEach(p=>S.bounties.push({id:'b'+Date.now()+'_'+p,player:p,title,desc,pts,diff,emoji,active:true}));
+  if(saveLib) {
+    const cats = ['Morning & Evening','Kitchen','Bedroom','Living Areas','Outdoors','Trash & Laundry','Custom'];
+    const tid = 'tc'+Date.now();
+    S.customTemplates = S.customTemplates||[];
+    S.customTemplates.push({id:tid,cat:'Custom',emoji,title,desc,pts,diff});
+  }
+  save(); showNotif('⚔️ Quest posted!');
+  ['new-title','new-desc','new-pts','new-emoji'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('save-to-lib').checked=false;
+  switchTab('manage'); renderManage();
+}
+
+// ======= TEMPLATE LIBRARY =======
+function setAddMode(mode) {
+  document.querySelectorAll('.add-mode-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.add-mode-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('mode-tab-'+mode).classList.add('active');
+  document.getElementById('mode-'+mode).classList.add('active');
+  if(mode==='lib') renderTemplates();
+}
+
+function getAllTemplates() {
+  return [...BUILTIN_TEMPLATES, ...(S.customTemplates||[])];
+}
+
+function renderTemplates() {
+  const q = (document.getElementById('tpl-search')||{}).value||'';
+  const query = q.toLowerCase();
+  const all = getAllTemplates();
+  const filtered = query ? all.filter(t=>t.title.toLowerCase().includes(query)||t.desc.toLowerCase().includes(query)||t.cat.toLowerCase().includes(query)) : all;
+
+  // Group by category
+  const cats = {};
+  filtered.forEach(t=>{ if(!cats[t.cat]) cats[t.cat]=[]; cats[t.cat].push(t); });
+
+  const el = document.getElementById('tpl-library');
+  if(!filtered.length){ el.innerHTML=`<div class="empty-st"><div class="empty-ico">🔍</div><div class="empty-txt">No matches found</div></div>`; return; }
+
+  el.innerHTML = Object.entries(cats).map(([cat,items])=>`
+    <div class="tpl-category">
+      <div class="tpl-cat-label">${cat}</div>
+      <div class="tpl-grid">
+        ${items.map(t=>`
+          <div class="tpl-card ${selectedTemplate&&selectedTemplate.id===t.id?'selected':''}" onclick="selectTemplate('${t.id}')" style="${selectedTemplate&&selectedTemplate.id===t.id?'border-color:var(--gold-dim);background:rgba(200,160,48,0.08)':''}">
+            <div class="tpl-card-pts">${t.pts}</div>
+            <div class="tpl-card-top"><span class="tpl-card-emoji">${t.emoji}</span><span class="tpl-card-name">${t.title}</span></div>
+            <div class="tpl-card-meta">${t.diff} · ${t.pts} pts</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function selectTemplate(id) {
+  const all = getAllTemplates();
+  selectedTemplate = all.find(t=>t.id===id)||null;
+  renderTemplates();
+  if(selectedTemplate) {
+    document.getElementById('tpl-post-name').textContent = selectedTemplate.emoji+' '+selectedTemplate.title+' — who gets this quest?';
+    document.getElementById('tpl-post-bar').classList.add('visible');
+  }
+}
+
+function clearTplBar() {
+  selectedTemplate=null;
+  document.getElementById('tpl-post-bar').classList.remove('visible');
+}
+
+function postTemplate(player) {
+  if(!selectedTemplate) return;
+  const t = selectedTemplate;
+  const ts = Date.now();
+  (player==='both'?['fox','forest']:[player]).forEach(p=>{
+    S.bounties.push({id:'b'+ts+'_'+p,player:p,title:t.title,desc:t.desc,pts:t.pts,diff:t.diff,emoji:t.emoji,active:true});
+  });
+  save();
+  showNotif(`⚔️ "${t.title}" posted!`);
+  clearTplBar();
+  renderTemplates();
+  setTimeout(()=>switchTab('manage'),600);
+}
+
+// ======= RECURRING TASKS =======
+function renderRecurring() {
+  const el = document.getElementById('recur-list');
+  const list = S.recurring||[];
+  if(!list.length){
+    el.innerHTML=`<div class="empty-st"><div class="empty-ico">⏰</div><div class="empty-txt">No recurring quests yet — add one below</div></div>`;
+    return;
+  }
+  const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  el.innerHTML = list.map(r=>{
+    const dayChips = DAY_NAMES.map((d,i)=>`<span class="day-chip ${r.days.includes(i)?'on':''}">${d}</span>`).join('');
+    const nextStr = getNextOccurrence(r);
+    return `<div class="recur-card">
+      <div class="recur-emoji">${r.emoji||'⏰'}</div>
+      <div class="recur-info">
+        <div class="recur-name">${r.title}</div>
+        <div class="recur-meta">${r.player==='both'?'Both heroes':r.player} · ${r.pts} pts · ${r.diff}</div>
+        <div class="recur-schedule">${r.freq==='weekly'?`<span class="day-chip on">Weekly — ${DAY_NAMES[r.days[0]]}</span>`:dayChips}</div>
+        <div class="recur-next-badge">${r.paused?'⏸ Paused':'⏭ '+nextStr}</div>
+      </div>
+      <div class="recur-acts">
+        <span class="recur-status ${r.paused?'paused':'active'}">${r.paused?'Paused':'Active'}</span>
+        <div class="recur-btns">
+          <button class="tog-b ${r.paused?'':'on'}" onclick="toggleRecur('${r.id}')">${r.paused?'Resume':'Pause'}</button>
+          <button class="del-b" onclick="delRecur('${r.id}')">Del</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getNextOccurrence(r) {
+  if(r.paused) return 'Paused';
+  const now = new Date();
+  const today = now.getDay();
+  if(!r.days.length) return 'No days set';
+  // find next day in schedule
+  for(let i=0;i<=7;i++){
+    const d=(today+i)%7;
+    if(r.days.includes(d)){
+      if(i===0) return 'Today';
+      if(i===1) return 'Tomorrow';
+      return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d];
+    }
+  }
+  return '—';
+}
+
+function toggleRecur(id) {
+  const r=S.recurring.find(x=>x.id===id); if(r){ r.paused=!r.paused; save(); renderRecurring(); }
+}
+function delRecur(id) {
+  if(!confirm('Delete this recurring quest?'))return;
+  S.recurring=S.recurring.filter(x=>x.id!==id); save(); renderRecurring();
+}
+
+// Recurring form
+function openNewRecurring() {
+  document.getElementById('recur-form').style.display='block';
+  document.getElementById('recur-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeRecurForm() { document.getElementById('recur-form').style.display='none'; }
+
+function setFreq(f) {
+  curFreq=f;
+  document.getElementById('freq-daily').classList.toggle('sel',f==='daily');
+  document.getElementById('freq-weekly').classList.toggle('sel',f==='weekly');
+  // For weekly, only allow one day
+  const wrap=document.getElementById('day-picker-wrap');
+  if(f==='weekly'){
+    wrap.querySelector('label').textContent='Which day of the week?';
+    // deselect all but Monday
+    wrap.querySelectorAll('.day-toggle').forEach((b,i)=>{b.classList.toggle('sel',i===1);});
+  } else {
+    wrap.querySelector('label').textContent='Active Days';
+  }
+}
+
+function toggleDay(btn) {
+  if(curFreq==='weekly'){
+    // Single select for weekly
+    document.querySelectorAll('.day-toggle').forEach(b=>b.classList.remove('sel'));
+    btn.classList.add('sel');
+  } else {
+    btn.classList.toggle('sel');
+  }
+}
+
+function saveRecurring() {
+  const player=document.getElementById('rc-player').value;
+  const title=document.getElementById('rc-title').value.trim();
+  const desc=document.getElementById('rc-desc').value.trim();
+  const pts=parseInt(document.getElementById('rc-pts').value)||80;
+  const diff=document.getElementById('rc-diff').value;
+  const emoji=document.getElementById('rc-emoji').value.trim()||'⏰';
+  const days=[...document.querySelectorAll('.day-toggle.sel')].map(b=>parseInt(b.dataset.day));
+  if(!title){showNotif('Enter a title');return;}
+  if(!days.length){showNotif('Select at least one day');return;}
+  S.recurring=S.recurring||[];
+  S.recurring.push({id:'r'+Date.now(),player,title,desc,pts,diff,emoji,freq:curFreq,days,paused:false,lastPosted:null});
+  save(); closeRecurForm();
+  // Clear form
+  ['rc-title','rc-desc','rc-pts','rc-emoji'].forEach(i=>document.getElementById(i).value='');
+  renderRecurring();
+  showNotif('⏰ Recurring quest saved!');
+}
+
+// Auto-post recurring tasks on app load
+function processRecurring() {
+  if(!(S.recurring||[]).length) return;
+  const today = new Date();
+  const todayStr = today.toDateString();
+  const todayDay = today.getDay();
+  let anyPosted = false;
+
+  S.recurring.forEach(r => {
+    if(r.paused) return;
+    if(r.lastPosted === todayStr) return; // already posted today
+    if(!r.days.includes(todayDay)) return; // not scheduled today
+
+    // Check it's not already active on the board (prevent duplicates)
+    const players = r.player==='both'?['fox','forest']:[r.player];
+    players.forEach(p=>{
+      const alreadyActive = S.bounties.some(b=>b.recurringId===r.id && b.player===p && b.active);
+      if(!alreadyActive){
+        // Remove old completed/rejected sub for this recurring
+        S.subs = S.subs.filter(s=>!(s.recurringId===r.id && s.player===p));
+        // Remove old bounty instance
+        S.bounties = S.bounties.filter(b=>!(b.recurringId===r.id && b.player===p));
+        S.bounties.push({id:'b'+Date.now()+'_'+p+'_r',player:p,title:r.title,desc:r.desc,pts:r.pts,diff:r.diff,emoji:r.emoji,active:true,recurringId:r.id});
+        anyPosted=true;
+      }
+    });
+    r.lastPosted = todayStr;
+  });
+
+  if(anyPosted) { save(); }
+}
+
+function renderScores() {
+  ['fox','forest'].forEach(p=>{
+    document.getElementById(`s-${p}-pts`).textContent=S[p].pts.toLocaleString();
+    document.getElementById(`s-${p}-money`).textContent='$'+(S[p].pts/PPD).toFixed(2);
+  });
+  const hist=document.getElementById('hist-list');
+  if(!S.history.length){hist.innerHTML=`<div class="empty-st" style="padding:14px"><div class="empty-txt">No history yet</div></div>`;return;}
+  hist.innerHTML=S.history.slice(0,30).map(h=>`
+    <div class="hist-item">
+      <span class="h-tag ${h.player}-tag">${h.player}</span>
+      <span class="h-name">${h.title}</span>
+      <span class="h-pts">+${h.pts}</span>
+      <span class="h-time">${new Date(h.time).toLocaleDateString()}</span>
+    </div>`).join('');
+}
+
+function resetScores(who) {
+  if(!confirm(`Reset ${who==='all'?'ALL':who} scores?`))return;
+  if(who==='all'||who==='fox'){S.fox.pts=0;S.fox.cleared=0;}
+  if(who==='all'||who==='forest'){S.forest.pts=0;S.forest.cleared=0;}
+  if(who==='all'){S.subs=[];S.history=[];}
+  else{S.subs=S.subs.filter(s=>s.player!==who||s.status!=='approved');S.history=S.history.filter(h=>h.player!==who);}
+  save();renderScores();updateHome();showNotif('Scores reset');
+}
+
+function showNotif(msg) {
+  const el=document.getElementById('notif'); el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ======= D&D LEVEL SYSTEM =======
+const RANKS = [
+  { level:1,  title:'Peasant',           icon:'🌾', xp:0,    lore:'Every legend starts somewhere. You sweep the floors and dream of greater things.',                                    class:'Commoner' },
+  { level:2,  title:'Apprentice',        icon:'📜', xp:300,  lore:'You have read the scrolls and sharpened your first blade. The guild begins to take notice.',                         class:'Initiate' },
+  { level:3,  title:'Squire',            icon:'🛡️', xp:700,  lore:'Sworn to duty, you polish the knight\'s armour and run errands across the keep without complaint.',                 class:'Fighter' },
+  { level:4,  title:'Scout',             icon:'🏹', xp:1300, lore:'Fleet of foot and sharp of eye, you venture beyond the village walls on your first real missions.',                  class:'Ranger' },
+  { level:5,  title:'Adventurer',        icon:'⚔️', xp:2100, lore:'You carry your own sword now. The tavern storytellers know your name and buy you a round.',                          class:'Fighter' },
+  { level:6,  title:'Sellsword',         icon:'🗡️', xp:3200, lore:'Coin and honour both — you take contracts from merchants and minor lords, never backing down.',                     class:'Mercenary' },
+  { level:7,  title:'Pathfinder',        icon:'🧭', xp:4700, lore:'You have mapped three valleys and crossed the Ashwood alone. Your compass never steers you wrong.',                 class:'Ranger' },
+  { level:8,  title:'Knight Errant',     icon:'🐴', xp:6600, lore:'Riding without a lord, you seek wrongs to right and monsters to vanquish across the realm.',                        class:'Paladin' },
+  { level:9,  title:'Champion',          icon:'🏆', xp:9000, lore:'Victorious in tournament and battle alike, nobles seek your service and bards compose verses in your honour.',      class:'Champion' },
+  { level:10, title:'Arcane Initiate',   icon:'🔮', xp:12000,lore:'The old wizard sensed the spark in you. You have begun to weave threads of magic between sword strikes.',           class:'Mage' },
+  { level:11, title:'Monster Hunter',    icon:'🐉', xp:15500,lore:'Trolls, basilisks, wraiths — your trophy wall is running out of room.',                                             class:'Witcher' },
+  { level:12, title:'Battle-Mage',       icon:'⚡', xp:19500,lore:'Steel and sorcery forged into one terrifying art. Few dare stand opposite you on the field.',                       class:'Spellblade' },
+  { level:13, title:'Lord of the Keep',  icon:'🏰', xp:24500,lore:'The king has granted you a small keep on the border. You command soldiers and answer to no one below the throne.',  class:'Noble' },
+  { level:14, title:'War Marshal',       icon:'⚔️', xp:30500,lore:'Armies move at your word. Your battle plans are studied in academies before you have even finished writing them.',  class:'General' },
+  { level:15, title:'Legendary Hero',    icon:'🌟', xp:38000,lore:'Songs are sung of you from the frozen north to the scorched south. The realm is a safer place because of you.',     class:'Legend' },
+];
+
+function getLevelInfo(pts) {
+  let current = RANKS[0];
+  for (let i = RANKS.length - 1; i >= 0; i--) {
+    if (pts >= RANKS[i].xp) { current = RANKS[i]; break; }
+  }
+  const idx = RANKS.indexOf(current);
+  const next = RANKS[idx + 1] || null;
+  const xpIntoLevel = pts - current.xp;
+  const xpNeeded = next ? next.xp - current.xp : 1;
+  const pct = next ? Math.min((xpIntoLevel / xpNeeded) * 100, 100) : 100;
+  const xpToNext = next ? next.xp - pts : 0;
+  return { rank: current, next, idx, pct, xpToNext };
+}
+
+function updateHome() {
+  ['fox','forest'].forEach(p => {
+    const pts = S[p].pts;
+    const { rank, next, pct, xpToNext } = getLevelInfo(pts);
+    document.getElementById(`${p}-pts-h`).textContent = pts.toLocaleString() + ' XP';
+    document.getElementById(`${p}-money-h`).textContent = pts.toLocaleString();
+    document.getElementById(`${p}-cleared-h`).textContent = S[p].cleared;
+    document.getElementById(`${p}-rank-title`).textContent = rank.title + ' · Level ' + rank.level;
+    document.getElementById(`${p}-lv-label`).textContent = 'LV ' + rank.level;
+    document.getElementById(`${p}-lv-next`).textContent = next ? xpToNext.toLocaleString() + ' XP to ' + next.title : 'MAX RANK';
+    document.getElementById(`${p}-xp`).style.width = pct + '%';
+  });
+}
+
+function openLevelModal(p) {
+  const pts = S[p].pts;
+  const { rank, next, pct, xpToNext, idx } = getLevelInfo(pts);
+  const color = p === 'fox' ? 'var(--fox-bright)' : 'var(--forest-bright)';
+  const colorClass = p;
+
+  document.getElementById('lm-bar').style.background =
+    p === 'fox'
+      ? 'linear-gradient(90deg, var(--fox-dark), var(--fox-bright), var(--fox-dark))'
+      : 'linear-gradient(90deg, var(--forest-dark), var(--forest-bright), var(--forest-dark))';
+
+  const badge = document.getElementById('lm-badge');
+  badge.className = 'lm-player-badge ' + p;
+  document.getElementById('lm-badge-icon').textContent = rank.icon;
+  document.getElementById('lm-badge-name').textContent = p === 'fox' ? 'Fox' : 'Forest';
+  document.getElementById('lm-current-rank').textContent = rank.title;
+  document.getElementById('lm-current-lore').textContent = '"' + rank.lore + '"';
+  document.getElementById('lm-prog-cur').textContent = pts.toLocaleString() + ' XP';
+  document.getElementById('lm-prog-nxt').textContent = next ? 'Next: ' + next.xp.toLocaleString() + ' XP' : 'MAX RANK ✦';
+  setTimeout(() => document.getElementById('lm-prog-fill').style.width = pct + '%', 50);
+
+  const list = document.getElementById('lm-rank-list');
+  list.innerHTML = RANKS.map((r, i) => {
+    const achieved = pts >= r.xp;
+    const isCurrent = i === idx;
+    const isLocked = !achieved;
+    let cls = isLocked ? 'locked' : achieved && !isCurrent ? 'achieved' : '';
+    if (isCurrent) cls = 'current';
+    const xpLabel = isCurrent
+      ? (next ? `${(pts - r.xp).toLocaleString()} / ${(next.xp - r.xp).toLocaleString()} XP` : 'MAX')
+      : r.xp === 0 ? 'Start' : r.xp.toLocaleString() + ' XP';
+    const xpCls = isCurrent ? 'current' : achieved ? 'achieved' : '';
+    return `
+      <div class="lm-rank-row ${cls}">
+        ${isCurrent ? '<div class="lm-current-pip"></div>' : ''}
+        <div class="lm-rank-icon">${r.icon}</div>
+        <div class="lm-rank-info">
+          <div class="lm-rank-name">${r.title}</div>
+          <div class="lm-rank-sub">Level ${r.level} · ${r.class}</div>
+        </div>
+        <div class="lm-rank-xp ${xpCls}">${xpLabel}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('level-modal').classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>
