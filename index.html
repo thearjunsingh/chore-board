@@ -393,6 +393,11 @@ body::before {
   text-transform: uppercase; color: #c084fc; border: 1px solid #7c3aed44;
   background: rgba(124,58,237,0.1); padding: 2px 7px; display: inline-block; margin-bottom: 6px;
 }
+.bc-coop {
+  font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px;
+  text-transform: uppercase; color: #38bdf8; border: 1px solid #0284c744;
+  background: rgba(2,132,199,0.1); padding: 2px 7px; display: inline-block; margin-bottom: 6px;
+}
 
 .bc-top { height: 2px; }
 .bounty-card.fox .bc-top { background: linear-gradient(90deg, transparent, var(--fox-primary), transparent); }
@@ -1373,6 +1378,10 @@ body::before {
             <label for="rc-firstclaim" class="form-lbl" style="margin:0;cursor:pointer;">⚡ First hero wins</label>
           </div>
         </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 4px">
+          <input type="checkbox" id="rc-coop" style="width:18px;height:18px;cursor:pointer;accent-color:#38bdf8">
+          <label for="rc-coop" class="form-lbl" style="margin:0;cursor:pointer;">🤝 Co-op quest</label>
+        </div>
         <div style="display:flex;gap:8px;margin-top:4px">
           <button class="post-btn" style="flex:1" onclick="saveRecurring()">⏰ Save Recurring Quest</button>
           <button class="rst-btn" style="border-color:var(--border2);color:var(--text-dim)" onclick="closeRecurForm()">Cancel</button>
@@ -1423,6 +1432,10 @@ body::before {
           <input type="checkbox" id="new-firstclaim" style="width:16px;height:16px;accent-color:#c084fc">
           <label for="new-firstclaim" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ First hero wins (removes from other after claim)</label>
         </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 10px">
+          <input type="checkbox" id="new-coop" style="width:16px;height:16px;accent-color:#38bdf8">
+          <label for="new-coop" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">🤝 Co-op (both heroes must complete together)</label>
+        </div>
         <button class="post-btn" onclick="addBounty()">⚔️ Post Quest</button>
       </div>
     </div>
@@ -1452,11 +1465,18 @@ body::before {
         <input type="checkbox" id="etpl-xponly" style="width:16px;height:16px;accent-color:var(--gold)">
         <label for="etpl-xponly" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ XP Only (no point payout)</label>
       </div>
-      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 4px">
         <input type="checkbox" id="etpl-firstclaim" style="width:16px;height:16px;accent-color:#c084fc">
         <label for="etpl-firstclaim" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ First hero wins</label>
       </div>
-      <button class="post-btn" onclick="saveTemplateEdit()">✦ Save Changes</button>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
+        <input type="checkbox" id="etpl-coop" style="width:16px;height:16px;accent-color:#38bdf8">
+        <label for="etpl-coop" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">🤝 Co-op quest</label>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="post-btn" style="flex:1" onclick="saveTemplateEdit()">✦ Save Changes</button>
+        <button class="post-btn" style="flex:1;background:linear-gradient(135deg,rgba(14,165,233,0.15),rgba(14,165,233,0.05));border-color:#0ea5e9;color:#38bdf8" onclick="templateToRecurring()">⏰ Make Recurring</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1509,6 +1529,10 @@ body::before {
           <label for="re-firstclaim" class="form-lbl" style="margin:0;cursor:pointer;">⚡ First hero wins</label>
         </div>
       </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 10px">
+        <input type="checkbox" id="re-coop" style="width:18px;height:18px;cursor:pointer;accent-color:#38bdf8">
+        <label for="re-coop" class="form-lbl" style="margin:0;cursor:pointer;">🤝 Co-op quest</label>
+      </div>
       <button class="post-btn" onclick="saveRecurEdit()">⏰ Save Changes</button>
     </div>
   </div>
@@ -1541,6 +1565,10 @@ body::before {
       <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
         <input type="checkbox" id="ce-firstclaim" style="width:16px;height:16px;accent-color:#c084fc">
         <label for="ce-firstclaim" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ First hero wins</label>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
+        <input type="checkbox" id="ce-coop" style="width:16px;height:16px;accent-color:#38bdf8">
+        <label for="ce-coop" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">🤝 Co-op quest</label>
       </div>
       <button class="post-btn" onclick="saveChoreEdit()">✦ Save Changes</button>
     </div>
@@ -1625,7 +1653,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v18</div>
+<div class="version-tag">v19</div>
 
 <script>
 // ============================================================
@@ -1646,6 +1674,7 @@ const firebaseConfig = {
 let db = null;
 let stateRef = null;
 let saveTimeout = null;
+let isSaving = false; // guard: suppress listener re-sync during our own writes
 
 // ============================================================
 //  STATE
@@ -1682,6 +1711,7 @@ function initFirebase() {
 
     // Listen for real-time changes from any device
     stateRef.on('value', snapshot => {
+      if (isSaving) return; // ignore echoes of our own writes
       const data = snapshot.val();
       if (data) {
         S = data;
@@ -1770,11 +1800,13 @@ function hideLoading() {
 
 // Debounced save — batches rapid changes into one write
 function save() {
+  isSaving = true;
+  clearTimeout(saveTimeout);
   // Save to Firebase (full data including photos)
   if (typeof db !== 'undefined') {
     try { db.ref('state').set(S); } catch(e) { console.warn('Firebase save failed:', e); }
   }
-  // Mirror to localStorage as offline backup — but strip photos to avoid quota exceeded
+  // Mirror to localStorage as offline backup — strip photos to avoid quota exceeded
   try {
     const slim = JSON.parse(JSON.stringify(S));
     if (slim.subs) slim.subs = slim.subs.map(s => ({...s, photo: ''}));
@@ -1782,6 +1814,8 @@ function save() {
   } catch(e) {
     console.warn('localStorage save failed:', e);
   }
+  // Re-enable listener after 2s (enough for Firebase round-trip)
+  saveTimeout = setTimeout(() => { isSaving = false; }, 2000);
 }
 
 function init() {
@@ -1892,6 +1926,7 @@ function makeBountyCard(b, p, cls, rib, can) {
     : `<div class="bc-pts">${b.pts}</div><div class="bc-money">${b.pts} points</div>`;
   const countdownHtml = (cls === '' || cls === 'pend') ? getCountdownHtml(b) : '';
   const firstClaimHtml = b.firstClaim ? `<div class="bc-firstclaim">⚡ First hero wins</div>` : '';
+  const coopHtml       = b.coop       ? `<div class="bc-coop">🤝 Co-op Quest</div>` : '';
   return `<div class="bounty-card ${p} ${cls}" onclick="${can?`openClaim('${b.id}')`:''}" >
     <div class="bc-top"></div>
     <div class="bc-ribbon">${rib}</div>
@@ -1901,6 +1936,7 @@ function makeBountyCard(b, p, cls, rib, can) {
       <div class="bc-meta"><span class="diff-tag diff-${b.diff}">${b.diff}</span></div>
       ${countdownHtml}
       ${firstClaimHtml}
+      ${coopHtml}
       <div class="bc-title">${b.title}</div>
       <div class="bc-desc">${b.desc}</div>
       <div class="bc-footer">
@@ -2267,6 +2303,7 @@ function openChoreEdit(id) {
   document.getElementById('ce-deadline').value  = b.deadline||0;
   document.getElementById('ce-xponly').checked  = b.xpOnly||false;
   document.getElementById('ce-firstclaim').checked = b.firstClaim||false;
+  document.getElementById('ce-coop').checked    = b.coop||false;
   document.getElementById('chore-edit-modal').classList.add('active');
 }
 
@@ -2284,6 +2321,7 @@ function saveChoreEdit() {
   if (b.deadline && !b.postedAt) b.postedAt = new Date().toISOString();
   b.xpOnly     = document.getElementById('ce-xponly').checked;
   b.firstClaim = document.getElementById('ce-firstclaim').checked;
+  b.coop       = document.getElementById('ce-coop').checked;
   save(); closeModal('chore-edit-modal'); renderManage();
   showNotif('✦ Chore updated!');
 }
@@ -2298,18 +2336,20 @@ function addBounty() {
   const saveLib=document.getElementById('save-to-lib').checked;
   const xpOnly=document.getElementById('new-xp-only').checked;
   const firstClaim=document.getElementById('new-firstclaim').checked;
+  const coop=document.getElementById('new-coop').checked;
   if(!title){showNotif('Enter a quest title');return;}
   if(!desc){showNotif('Enter a description');return;}
-  (player==='both'?['fox','forest']:[player]).forEach(p=>S.bounties.push({id:'b'+Date.now()+'_'+p,player:p,title,desc,pts,diff,emoji,active:true,xpOnly,firstClaim}));
+  (player==='both'?['fox','forest']:[player]).forEach(p=>S.bounties.push({id:'b'+Date.now()+'_'+p,player:p,title,desc,pts,diff,emoji,active:true,xpOnly,firstClaim,coop}));
   if(saveLib) {
     S.customTemplates = S.customTemplates||[];
-    S.customTemplates.push({id:'tc'+Date.now(),cat:'Custom',emoji,title,desc,pts,diff,xpOnly,firstClaim});
+    S.customTemplates.push({id:'tc'+Date.now(),cat:'Custom',emoji,title,desc,pts,diff,xpOnly,firstClaim,coop});
   }
   save(); showNotif('⚔️ Quest posted!');
   ['new-title','new-desc','new-pts','new-emoji'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('save-to-lib').checked=false;
   document.getElementById('new-xp-only').checked=false;
   document.getElementById('new-firstclaim').checked=false;
+  document.getElementById('new-coop').checked=false;
   switchTab('manage'); renderManage();
 }
 
@@ -2360,6 +2400,7 @@ function editTemplate(id) {
   document.getElementById('etpl-deadline').value = t.deadline||0;
   document.getElementById('etpl-xponly').checked = t.xpOnly||false;
   document.getElementById('etpl-firstclaim').checked = t.firstClaim||false;
+  document.getElementById('etpl-coop').checked = t.coop||false;
   document.getElementById('tpl-edit-modal').classList.add('active');
 }
 
@@ -2374,22 +2415,15 @@ function saveTemplateEdit() {
     emoji: document.getElementById('etpl-emoji').value.trim()||'⚔️',
     xpOnly:document.getElementById('etpl-xponly').checked,
     firstClaim: document.getElementById('etpl-firstclaim').checked,
+    coop: document.getElementById('etpl-coop').checked,
     deadline: parseInt(document.getElementById('etpl-deadline').value)||null,
   };
   if (isBuiltin) {
-    // Convert built-in to custom override
     const orig = BUILTIN_TEMPLATES.find(x=>x.id===id);
     S.customTemplates = S.customTemplates||[];
     S.hiddenBuiltins = S.hiddenBuiltins||[];
-    // Hide the original
     if(!S.hiddenBuiltins.includes(id)) S.hiddenBuiltins.push(id);
-    // Add custom override
-    S.customTemplates.push({
-      id: 'tc'+Date.now(),
-      cat: orig?.cat||'Custom',
-      overridesId: id,
-      ...newData
-    });
+    S.customTemplates.push({ id:'tc'+Date.now(), cat:orig?.cat||'Custom', overridesId:id, ...newData });
   } else {
     const t = S.customTemplates.find(x=>x.id===id);
     if (!t) return;
@@ -2397,6 +2431,35 @@ function saveTemplateEdit() {
   }
   save(); closeModal('tpl-edit-modal'); renderTemplates();
   showNotif('✦ Template updated!');
+}
+
+function templateToRecurring() {
+  // Grab current values from the template edit form
+  const title = document.getElementById('etpl-title').value.trim();
+  const desc  = document.getElementById('etpl-desc').value.trim();
+  const pts   = parseInt(document.getElementById('etpl-pts').value)||50;
+  const diff  = document.getElementById('etpl-diff').value;
+  const emoji = document.getElementById('etpl-emoji').value.trim()||'⚔️';
+  const xpOnly= document.getElementById('etpl-xponly').checked;
+  const firstClaim = document.getElementById('etpl-firstclaim').checked;
+  const coop  = document.getElementById('etpl-coop').checked;
+  const deadline = parseInt(document.getElementById('etpl-deadline').value)||24;
+  if (!title) { showNotif('Enter a title first'); return; }
+  closeModal('tpl-edit-modal');
+  // Switch to Recurring tab and pre-fill the new recurring form
+  switchTab('recurring');
+  openNewRecurring();
+  setTimeout(() => {
+    document.getElementById('rc-title').value = title;
+    document.getElementById('rc-desc').value  = desc;
+    document.getElementById('rc-pts').value   = pts;
+    document.getElementById('rc-diff').value  = diff;
+    document.getElementById('rc-emoji').value = emoji;
+    document.getElementById('rc-deadline').value = deadline;
+    document.getElementById('rc-firstclaim').checked = firstClaim;
+    document.getElementById('rc-coop').checked = coop;
+    showNotif('⏰ Template loaded — set frequency and save!');
+  }, 150);
 }
 
 function renderTemplates() {
@@ -2616,6 +2679,7 @@ function openRecurEdit(id) {
   document.getElementById('re-freq').value      = r.freq||'daily';
   document.getElementById('re-deadline').value  = r.deadline||0;
   document.getElementById('re-firstclaim').checked = r.firstClaim||false;
+  document.getElementById('re-coop').checked       = r.coop||false;
   // Set day picker
   updateReEditDayPicker();
   const days = r.days||[];
@@ -2666,6 +2730,7 @@ function saveRecurEdit() {
   r.freq       = document.getElementById('re-freq').value;
   r.deadline   = parseInt(document.getElementById('re-deadline').value)||null;
   r.firstClaim = document.getElementById('re-firstclaim').checked;
+  r.coop       = document.getElementById('re-coop').checked;
   if (r.freq === 'monthly') {
     r.monthDay = parseInt(document.getElementById('re-monthday').value)||1;
     r.days = [];
@@ -2687,6 +2752,7 @@ function saveRecurring() {
   const freq       = document.getElementById('rc-freq-select').value;
   const deadline   = parseInt(document.getElementById('rc-deadline').value)||24;
   const firstClaim = document.getElementById('rc-firstclaim').checked;
+  const coop       = document.getElementById('rc-coop').checked;
   let days = [], monthDay = null;
   if (freq === 'monthly') {
     monthDay = parseInt(document.getElementById('rc-monthday').value)||1;
@@ -2696,7 +2762,7 @@ function saveRecurring() {
   }
   if (!title) { showNotif('Enter a title'); return; }
   S.recurring = S.recurring||[];
-  S.recurring.push({id:'r'+Date.now(), player, title, desc, pts, diff, emoji, freq, days, monthDay, deadline, firstClaim, paused:false, lastPosted:null});
+  S.recurring.push({id:'r'+Date.now(), player, title, desc, pts, diff, emoji, freq, days, monthDay, deadline, firstClaim, coop, paused:false, lastPosted:null});
   save(); closeRecurForm();
   ['rc-title','rc-desc','rc-pts','rc-emoji'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('rc-deadline').value = '24';
@@ -2743,7 +2809,7 @@ function processRecurring() {
       if (!alreadyActive) {
         S.subs    = S.subs.filter(s => !(s.recurringId === r.id && s.player === p));
         S.bounties = S.bounties.filter(b => !(b.recurringId === r.id && b.player === p));
-        S.bounties.push({id:'b'+Date.now()+'_'+p+'_r', player:p, title:r.title, desc:r.desc, pts:r.pts, diff:r.diff, emoji:r.emoji, active:true, recurringId:r.id, deadline:r.deadline||null, firstClaim:r.firstClaim||false, postedAt:new Date().toISOString()});
+        S.bounties.push({id:'b'+Date.now()+'_'+p+'_r', player:p, title:r.title, desc:r.desc, pts:r.pts, diff:r.diff, emoji:r.emoji, active:true, recurringId:r.id, deadline:r.deadline||null, firstClaim:r.firstClaim||false, coop:r.coop||false, postedAt:new Date().toISOString()});
         anyPosted = true;
       }
     });
@@ -2798,7 +2864,7 @@ function applyOverride() {
   const amount = parseInt(document.getElementById('ov-amount').value);
   if (isNaN(amount) || amount < 0) { showNotif('Enter a valid amount'); return; }
 
-  const fieldLabel = field === 'xp' ? 'XP' : 'Points';
+  const fieldLabel = field === 'xp' ? 'XP' : field === 'cleared' ? 'Quests Cleared' : 'Points';
   const opLabel = op === 'add' ? `+${amount}` : op === 'sub' ? `-${amount}` : `= ${amount}`;
   if (!confirm(`Set ${player}'s ${fieldLabel} ${opLabel}?\nThis directly corrects the database.`)) return;
 
