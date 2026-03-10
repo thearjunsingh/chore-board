@@ -1343,10 +1343,25 @@ body::before {
         <div class="form-group"><label class="form-lbl">Icon</label><input class="f-input" id="rc-emoji" type="text" placeholder="☀️" maxlength="4"></div>
         <div class="form-group">
           <label class="form-lbl">Frequency</label>
-          <div class="freq-row">
-            <button class="freq-opt sel" id="freq-daily" onclick="setFreq('daily')">Daily</button>
-            <button class="freq-opt" id="freq-weekly" onclick="setFreq('weekly')">Weekly</button>
+          <select class="f-select" id="rc-freq-select" onchange="setFreqSelect(this.value)">
+            <option value="daily">Daily (specific days each week)</option>
+            <option value="weekly">Weekly (one day)</option>
+            <option value="biweekly">Every Other Week</option>
+            <option value="monthly">Monthly (day of month)</option>
+          </select>
+        </div>
+        <div class="form-group" id="day-picker-wrap">
+          <label class="form-lbl" id="day-picker-lbl">Active Days</label>
+          <div class="day-picker">
+            <button class="day-toggle sel" data-day="0" onclick="toggleDay(this)">Sun</button>
+            <button class="day-toggle sel" data-day="1" onclick="toggleDay(this)">Mon</button>
+            <button class="day-toggle sel" data-day="2" onclick="toggleDay(this)">Tue</button>
+            <button class="day-toggle sel" data-day="3" onclick="toggleDay(this)">Wed</button>
+            <button class="day-toggle sel" data-day="4" onclick="toggleDay(this)">Thu</button>
+            <button class="day-toggle sel" data-day="5" onclick="toggleDay(this)">Fri</button>
+            <button class="day-toggle" data-day="6" onclick="toggleDay(this)">Sat</button>
           </div>
+          <input class="f-input" id="rc-monthday" type="number" min="1" max="28" placeholder="Day of month (1–28)" style="display:none;margin-top:8px;">
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1356,18 +1371,6 @@ body::before {
           <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:22px;">
             <input type="checkbox" id="rc-firstclaim" style="width:18px;height:18px;cursor:pointer;">
             <label for="rc-firstclaim" class="form-lbl" style="margin:0;cursor:pointer;">⚡ First hero wins</label>
-          </div>
-        </div>
-        <div class="form-group" id="day-picker-wrap">
-          <label class="form-lbl">Active Days</label>
-          <div class="day-picker">
-            <button class="day-toggle sel" data-day="0" onclick="toggleDay(this)">Sun</button>
-            <button class="day-toggle sel" data-day="1" onclick="toggleDay(this)">Mon</button>
-            <button class="day-toggle sel" data-day="2" onclick="toggleDay(this)">Tue</button>
-            <button class="day-toggle sel" data-day="3" onclick="toggleDay(this)">Wed</button>
-            <button class="day-toggle sel" data-day="4" onclick="toggleDay(this)">Thu</button>
-            <button class="day-toggle sel" data-day="5" onclick="toggleDay(this)">Fri</button>
-            <button class="day-toggle" data-day="6" onclick="toggleDay(this)">Sat</button>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:4px">
@@ -1454,6 +1457,59 @@ body::before {
         <label for="etpl-firstclaim" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ First hero wins</label>
       </div>
       <button class="post-btn" onclick="saveTemplateEdit()">✦ Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECURRING EDIT MODAL -->
+<div class="modal-overlay" id="recur-edit-modal">
+  <div class="modal">
+    <div class="modal-bar" style="background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)"></div>
+    <div class="modal-head"><div class="modal-htitle">⏰ Edit Recurring Quest</div><button class="modal-x" onclick="closeModal('recur-edit-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="re-id">
+      <div class="form-group"><label class="form-lbl">Assign To</label><select class="f-select" id="re-player"><option value="fox">🟢 Fox</option><option value="forest">🟠 Forest</option><option value="both">👥 Both Heroes</option></select></div>
+      <div class="form-group"><label class="form-lbl">Quest Title</label><input class="f-input" id="re-title" type="text"></div>
+      <div class="form-group"><label class="form-lbl">Description</label><textarea class="f-textarea" id="re-desc" style="min-height:60px"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-lbl">Points</label><input class="f-input" id="re-pts" type="number" min="10" step="10"></div>
+        <div class="form-group"><label class="form-lbl">Difficulty</label><select class="f-select" id="re-diff"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-lbl">Icon (Emoji)</label><input class="f-input" id="re-emoji" type="text" maxlength="4"></div>
+      <div class="form-group">
+        <label class="form-lbl">Frequency</label>
+        <select class="f-select" id="re-freq" onchange="updateReEditDayPicker()">
+          <option value="daily">Daily (specific days each week)</option>
+          <option value="weekly">Weekly (one day)</option>
+          <option value="biweekly">Every Other Week</option>
+          <option value="monthly">Monthly (day of month)</option>
+        </select>
+      </div>
+      <div class="form-group" id="re-daypicker-wrap">
+        <label class="form-lbl" id="re-daypicker-lbl">Active Days</label>
+        <div class="day-picker" id="re-day-picker">
+          <button class="day-toggle" data-day="0" onclick="toggleReDay(this)">Sun</button>
+          <button class="day-toggle" data-day="1" onclick="toggleReDay(this)">Mon</button>
+          <button class="day-toggle" data-day="2" onclick="toggleReDay(this)">Tue</button>
+          <button class="day-toggle" data-day="3" onclick="toggleReDay(this)">Wed</button>
+          <button class="day-toggle" data-day="4" onclick="toggleReDay(this)">Thu</button>
+          <button class="day-toggle" data-day="5" onclick="toggleReDay(this)">Fri</button>
+          <button class="day-toggle" data-day="6" onclick="toggleReDay(this)">Sat</button>
+        </div>
+        <!-- Monthly day-of-month picker (hidden unless monthly) -->
+        <input class="f-input" id="re-monthday" type="number" min="1" max="28" placeholder="Day of month (1–28)" style="display:none;margin-top:8px;">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-lbl">⏳ Time Limit (hours, 0 = none)</label>
+          <input class="f-input" id="re-deadline" type="number" min="0" placeholder="0">
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:22px;">
+          <input type="checkbox" id="re-firstclaim" style="width:18px;height:18px;cursor:pointer;">
+          <label for="re-firstclaim" class="form-lbl" style="margin:0;cursor:pointer;">⚡ First hero wins</label>
+        </div>
+      </div>
+      <button class="post-btn" onclick="saveRecurEdit()">⏰ Save Changes</button>
     </div>
   </div>
 </div>
@@ -1569,7 +1625,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v17</div>
+<div class="version-tag">v18</div>
 
 <script>
 // ============================================================
@@ -2433,19 +2489,30 @@ function renderRecurring() {
   }
   const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   el.innerHTML = list.map(r=>{
-    const dayChips = DAY_NAMES.map((d,i)=>`<span class="day-chip ${r.days.includes(i)?'on':''}">${d}</span>`).join('');
+    const dayChips = DAY_NAMES.map((d,i)=>`<span class="day-chip ${r.days&&r.days.includes(i)?'on':''}">${d}</span>`).join('');
     const nextStr = getNextOccurrence(r);
+    let scheduleHtml;
+    if (r.freq === 'monthly') {
+      scheduleHtml = `<span class="day-chip on">Monthly — day ${r.monthDay||1}</span>`;
+    } else if (r.freq === 'biweekly') {
+      scheduleHtml = `<span class="day-chip on">Every other ${DAY_NAMES[r.days&&r.days[0]||1]}</span>`;
+    } else if (r.freq === 'weekly') {
+      scheduleHtml = `<span class="day-chip on">Weekly — ${DAY_NAMES[r.days&&r.days[0]||1]}</span>`;
+    } else {
+      scheduleHtml = dayChips;
+    }
     return `<div class="recur-card">
       <div class="recur-emoji">${r.emoji||'⏰'}</div>
       <div class="recur-info">
         <div class="recur-name">${r.title}</div>
-        <div class="recur-meta">${r.player==='both'?'Both heroes':r.player} · ${r.pts} pts · ${r.diff}${r.deadline?` · ⏳ ${r.deadline}h limit`:''}${r.firstClaim?' · ⚡ first wins':''}</div>
-        <div class="recur-schedule">${r.freq==='weekly'?`<span class="day-chip on">Weekly — ${DAY_NAMES[r.days[0]]}</span>`:dayChips}</div>
+        <div class="recur-meta">${r.player==='both'?'Both heroes':r.player} · ${r.pts} pts · ${r.diff}${r.deadline?` · ⏳ ${r.deadline}h`:''}${r.firstClaim?' · ⚡ first wins':''}</div>
+        <div class="recur-schedule">${scheduleHtml}</div>
         <div class="recur-next-badge">${r.paused?'⏸ Paused':'⏭ '+nextStr}</div>
       </div>
       <div class="recur-acts">
         <span class="recur-status ${r.paused?'paused':'active'}">${r.paused?'Paused':'Active'}</span>
         <div class="recur-btns">
+          <button class="tog-b" onclick="openRecurEdit('${r.id}')">Edit</button>
           <button class="tog-b ${r.paused?'':'on'}" onclick="toggleRecur('${r.id}')">${r.paused?'Resume':'Pause'}</button>
           <button class="del-b" onclick="delRecur('${r.id}')">Del</button>
         </div>
@@ -2455,16 +2522,31 @@ function renderRecurring() {
 }
 
 function getNextOccurrence(r) {
-  if(r.paused) return 'Paused';
+  if (r.paused) return 'Paused';
   const now = new Date();
+  if (r.freq === 'monthly') {
+    const day = r.monthDay || 1;
+    const next = new Date(now.getFullYear(), now.getMonth(), day);
+    if (next <= now) next.setMonth(next.getMonth() + 1);
+    return 'The ' + day + (day===1?'st':day===2?'nd':day===3?'rd':'th');
+  }
+  if (r.freq === 'biweekly') {
+    if (!r.lastPosted) return 'Next eligible ' + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][r.days&&r.days[0]||1];
+    const last = new Date(r.lastPosted);
+    const next = new Date(last.getTime() + 14 * 86400000);
+    const diff = Math.ceil((next - now) / 86400000);
+    if (diff <= 0) return 'Today';
+    if (diff === 1) return 'Tomorrow';
+    return 'In ' + diff + ' days';
+  }
   const today = now.getDay();
-  if(!r.days.length) return 'No days set';
-  // find next day in schedule
-  for(let i=0;i<=7;i++){
-    const d=(today+i)%7;
-    if(r.days.includes(d)){
-      if(i===0) return 'Today';
-      if(i===1) return 'Tomorrow';
+  const days = r.days || [];
+  if (!days.length) return 'No days set';
+  for (let i = 0; i <= 7; i++) {
+    const d = (today + i) % 7;
+    if (days.includes(d)) {
+      if (i === 0) return 'Today';
+      if (i === 1) return 'Tomorrow';
       return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d];
     }
   }
@@ -2481,88 +2563,194 @@ function delRecur(id) {
 
 // Recurring form
 function openNewRecurring() {
-  document.getElementById('recur-form').style.display='block';
+  // Reset form
+  document.getElementById('rc-freq-select').value = 'daily';
+  setFreqSelect('daily');
+  document.getElementById('recur-form').style.display = 'block';
   document.getElementById('recur-form').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function closeRecurForm() { document.getElementById('recur-form').style.display='none'; }
 
-function setFreq(f) {
-  curFreq=f;
-  document.getElementById('freq-daily').classList.toggle('sel',f==='daily');
-  document.getElementById('freq-weekly').classList.toggle('sel',f==='weekly');
-  // For weekly, only allow one day
-  const wrap=document.getElementById('day-picker-wrap');
-  if(f==='weekly'){
-    wrap.querySelector('label').textContent='Which day of the week?';
-    // deselect all but Monday
-    wrap.querySelectorAll('.day-toggle').forEach((b,i)=>{b.classList.toggle('sel',i===1);});
+function setFreqSelect(f) {
+  curFreq = f;
+  const wrap = document.getElementById('day-picker-wrap');
+  const lbl  = document.getElementById('day-picker-lbl');
+  const monthday = document.getElementById('rc-monthday');
+  const picker = wrap.querySelector('.day-picker');
+  if (f === 'monthly') {
+    picker.style.display = 'none';
+    monthday.style.display = 'block';
+    lbl.textContent = 'Day of month';
   } else {
-    wrap.querySelector('label').textContent='Active Days';
+    picker.style.display = 'flex';
+    monthday.style.display = 'none';
+    if (f === 'weekly' || f === 'biweekly') {
+      lbl.textContent = f === 'biweekly' ? 'Which day (every other week)?' : 'Which day of the week?';
+      wrap.querySelectorAll('.day-toggle').forEach((b,i) => b.classList.toggle('sel', i===1));
+    } else {
+      lbl.textContent = 'Active Days';
+    }
   }
 }
 
 function toggleDay(btn) {
-  if(curFreq==='weekly'){
-    // Single select for weekly
-    document.querySelectorAll('.day-toggle').forEach(b=>b.classList.remove('sel'));
+  const f = document.getElementById('rc-freq-select').value;
+  if (f === 'weekly' || f === 'biweekly') {
+    document.querySelectorAll('#day-picker-wrap .day-toggle').forEach(b => b.classList.remove('sel'));
     btn.classList.add('sel');
   } else {
     btn.classList.toggle('sel');
   }
 }
 
+// --- Recurring Edit Modal ---
+function openRecurEdit(id) {
+  const r = (S.recurring||[]).find(x => x.id === id); if (!r) return;
+  document.getElementById('re-id').value        = id;
+  document.getElementById('re-player').value    = r.player;
+  document.getElementById('re-title').value     = r.title;
+  document.getElementById('re-desc').value      = r.desc||'';
+  document.getElementById('re-pts').value       = r.pts||50;
+  document.getElementById('re-diff').value      = r.diff||'easy';
+  document.getElementById('re-emoji').value     = r.emoji||'⏰';
+  document.getElementById('re-freq').value      = r.freq||'daily';
+  document.getElementById('re-deadline').value  = r.deadline||0;
+  document.getElementById('re-firstclaim').checked = r.firstClaim||false;
+  // Set day picker
+  updateReEditDayPicker();
+  const days = r.days||[];
+  document.querySelectorAll('#re-day-picker .day-toggle').forEach(b => {
+    b.classList.toggle('sel', days.includes(parseInt(b.dataset.day)));
+  });
+  if (r.freq === 'monthly') {
+    document.getElementById('re-monthday').value = r.monthDay||1;
+  }
+  document.getElementById('recur-edit-modal').classList.add('active');
+}
+
+function updateReEditDayPicker() {
+  const f = document.getElementById('re-freq').value;
+  const picker = document.getElementById('re-day-picker');
+  const monthday = document.getElementById('re-monthday');
+  const lbl = document.getElementById('re-daypicker-lbl');
+  if (f === 'monthly') {
+    picker.style.display = 'none';
+    monthday.style.display = 'block';
+    lbl.textContent = 'Day of month';
+  } else {
+    picker.style.display = 'flex';
+    monthday.style.display = 'none';
+    lbl.textContent = (f === 'weekly' || f === 'biweekly') ? (f === 'biweekly' ? 'Which day (every other week)?' : 'Which day?') : 'Active Days';
+  }
+}
+
+function toggleReDay(btn) {
+  const f = document.getElementById('re-freq').value;
+  if (f === 'weekly' || f === 'biweekly') {
+    document.querySelectorAll('#re-day-picker .day-toggle').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+  } else {
+    btn.classList.toggle('sel');
+  }
+}
+
+function saveRecurEdit() {
+  const id = document.getElementById('re-id').value;
+  const r  = (S.recurring||[]).find(x => x.id === id); if (!r) return;
+  r.player     = document.getElementById('re-player').value;
+  r.title      = document.getElementById('re-title').value.trim() || r.title;
+  r.desc       = document.getElementById('re-desc').value.trim();
+  r.pts        = parseInt(document.getElementById('re-pts').value)||50;
+  r.diff       = document.getElementById('re-diff').value;
+  r.emoji      = document.getElementById('re-emoji').value.trim()||'⏰';
+  r.freq       = document.getElementById('re-freq').value;
+  r.deadline   = parseInt(document.getElementById('re-deadline').value)||null;
+  r.firstClaim = document.getElementById('re-firstclaim').checked;
+  if (r.freq === 'monthly') {
+    r.monthDay = parseInt(document.getElementById('re-monthday').value)||1;
+    r.days = [];
+  } else {
+    r.days = [...document.querySelectorAll('#re-day-picker .day-toggle.sel')].map(b => parseInt(b.dataset.day));
+    r.monthDay = null;
+  }
+  save(); closeModal('recur-edit-modal'); renderRecurring();
+  showNotif('⏰ Recurring quest updated!');
+}
+
 function saveRecurring() {
-  const player=document.getElementById('rc-player').value;
-  const title=document.getElementById('rc-title').value.trim();
-  const desc=document.getElementById('rc-desc').value.trim();
-  const pts=parseInt(document.getElementById('rc-pts').value)||50;
-  const diff=document.getElementById('rc-diff').value;
-  const emoji=document.getElementById('rc-emoji').value.trim()||'⏰';
-  const deadline=parseInt(document.getElementById('rc-deadline').value)||24;
-  const firstClaim=document.getElementById('rc-firstclaim').checked;
-  const days=[...document.querySelectorAll('.day-toggle.sel')].map(b=>parseInt(b.dataset.day));
-  if(!title){showNotif('Enter a title');return;}
-  if(!days.length){showNotif('Select at least one day');return;}
-  S.recurring=S.recurring||[];
-  S.recurring.push({id:'r'+Date.now(),player,title,desc,pts,diff,emoji,freq:curFreq,days,deadline,firstClaim,paused:false,lastPosted:null});
+  const player     = document.getElementById('rc-player').value;
+  const title      = document.getElementById('rc-title').value.trim();
+  const desc       = document.getElementById('rc-desc').value.trim();
+  const pts        = parseInt(document.getElementById('rc-pts').value)||50;
+  const diff       = document.getElementById('rc-diff').value;
+  const emoji      = document.getElementById('rc-emoji').value.trim()||'⏰';
+  const freq       = document.getElementById('rc-freq-select').value;
+  const deadline   = parseInt(document.getElementById('rc-deadline').value)||24;
+  const firstClaim = document.getElementById('rc-firstclaim').checked;
+  let days = [], monthDay = null;
+  if (freq === 'monthly') {
+    monthDay = parseInt(document.getElementById('rc-monthday').value)||1;
+  } else {
+    days = [...document.querySelectorAll('#day-picker-wrap .day-toggle.sel')].map(b=>parseInt(b.dataset.day));
+    if (!days.length) { showNotif('Select at least one day'); return; }
+  }
+  if (!title) { showNotif('Enter a title'); return; }
+  S.recurring = S.recurring||[];
+  S.recurring.push({id:'r'+Date.now(), player, title, desc, pts, diff, emoji, freq, days, monthDay, deadline, firstClaim, paused:false, lastPosted:null});
   save(); closeRecurForm();
   ['rc-title','rc-desc','rc-pts','rc-emoji'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('rc-deadline').value='24';
-  document.getElementById('rc-firstclaim').checked=false;
+  document.getElementById('rc-deadline').value = '24';
+  document.getElementById('rc-firstclaim').checked = false;
   renderRecurring();
   showNotif('⏰ Recurring quest saved!');
 }
 
 // Auto-post recurring tasks on app load
 function processRecurring() {
-  if(!(S.recurring||[]).length) return;
+  if (!(S.recurring||[]).length) return;
   const today = new Date();
   const todayStr = today.toDateString();
   const todayDay = today.getDay();
+  const todayDate = today.getDate();
   let anyPosted = false;
 
   S.recurring.forEach(r => {
-    if(r.paused) return;
-    if(r.lastPosted === todayStr) return; // already posted today
-    if(!r.days.includes(todayDay)) return; // not scheduled today
+    if (r.paused) return;
+    if (r.lastPosted === todayStr) return; // already posted today
 
-    // Check it's not already active on the board (prevent duplicates)
-    const players = r.player==='both'?['fox','forest']:[r.player];
-    players.forEach(p=>{
-      const alreadyActive = S.bounties.some(b=>b.recurringId===r.id && b.player===p && b.active);
-      if(!alreadyActive){
-        // Remove old completed/rejected sub for this recurring
-        S.subs = S.subs.filter(s=>!(s.recurringId===r.id && s.player===p));
-        // Remove old bounty instance
-        S.bounties = S.bounties.filter(b=>!(b.recurringId===r.id && b.player===p));
+    let shouldPost = false;
+    if (r.freq === 'monthly') {
+      shouldPost = todayDate === (r.monthDay || 1);
+    } else if (r.freq === 'biweekly') {
+      if (!r.days || !r.days.includes(todayDay)) return;
+      if (!r.lastPosted) {
+        shouldPost = true;
+      } else {
+        const daysSinceLast = Math.floor((today - new Date(r.lastPosted)) / 86400000);
+        shouldPost = daysSinceLast >= 14;
+      }
+    } else {
+      // daily or weekly — check day matches
+      if (!r.days || !r.days.includes(todayDay)) return;
+      shouldPost = true;
+    }
+
+    if (!shouldPost) return;
+
+    const players = r.player === 'both' ? ['fox','forest'] : [r.player];
+    players.forEach(p => {
+      const alreadyActive = S.bounties.some(b => b.recurringId === r.id && b.player === p && b.active);
+      if (!alreadyActive) {
+        S.subs    = S.subs.filter(s => !(s.recurringId === r.id && s.player === p));
+        S.bounties = S.bounties.filter(b => !(b.recurringId === r.id && b.player === p));
         S.bounties.push({id:'b'+Date.now()+'_'+p+'_r', player:p, title:r.title, desc:r.desc, pts:r.pts, diff:r.diff, emoji:r.emoji, active:true, recurringId:r.id, deadline:r.deadline||null, firstClaim:r.firstClaim||false, postedAt:new Date().toISOString()});
-        anyPosted=true;
+        anyPosted = true;
       }
     });
     r.lastPosted = todayStr;
   });
 
-  if(anyPosted) { save(); }
+  if (anyPosted) save();
 }
 
 function renderScores() {
