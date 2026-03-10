@@ -1382,6 +1382,10 @@ body::before {
           <input type="checkbox" id="rc-coop" style="width:18px;height:18px;cursor:pointer;accent-color:#38bdf8">
           <label for="rc-coop" class="form-lbl" style="margin:0;cursor:pointer;">🤝 Co-op quest</label>
         </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 4px">
+          <input type="checkbox" id="rc-xponly" style="width:18px;height:18px;cursor:pointer;accent-color:var(--gold)">
+          <label for="rc-xponly" class="form-lbl" style="margin:0;cursor:pointer;">⚡ XP Only (no point payout)</label>
+        </div>
         <div style="display:flex;gap:8px;margin-top:4px">
           <button class="post-btn" style="flex:1" onclick="saveRecurring()">⏰ Save Recurring Quest</button>
           <button class="rst-btn" style="border-color:var(--border2);color:var(--text-dim)" onclick="closeRecurForm()">Cancel</button>
@@ -1481,6 +1485,36 @@ body::before {
   </div>
 </div>
 
+<!-- HISTORY EDIT MODAL -->
+<div class="modal-overlay" id="hist-edit-modal">
+  <div class="modal">
+    <div class="modal-bar" style="background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)"></div>
+    <div class="modal-head"><div class="modal-htitle">📜 Edit History Entry</div><button class="modal-x" onclick="closeModal('hist-edit-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="he-idx">
+      <div class="form-group"><label class="form-lbl">Player</label>
+        <select class="f-select" id="he-player">
+          <option value="fox">🟢 Fox</option>
+          <option value="forest">🟠 Forest</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-lbl">Quest Title</label><input class="f-input" id="he-title" type="text"></div>
+      <div class="form-group"><label class="form-lbl">Points Awarded</label><input class="f-input" id="he-pts" type="number" min="0" step="10"></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
+        <input type="checkbox" id="he-xponly" style="width:16px;height:16px;accent-color:var(--gold)">
+        <label for="he-xponly" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ XP Only</label>
+      </div>
+      <div style="background:rgba(255,200,0,0.07);border:1px solid var(--gold-dim);padding:10px 12px;margin-bottom:14px;font-family:'Crimson Pro',serif;font-size:12px;color:var(--text-dim);">
+        ⚠️ Editing history is for display only — it does <strong>not</strong> recalculate player XP or points balances. Use Commander Override to correct scores.
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="post-btn" style="flex:1" onclick="saveHistEdit()">✦ Save Entry</button>
+        <button class="rst-btn" style="flex:1;border-color:var(--red);color:var(--red)" onclick="deleteHistEntry()">🗑 Delete Entry</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- RECURRING EDIT MODAL -->
 <div class="modal-overlay" id="recur-edit-modal">
   <div class="modal">
@@ -1532,6 +1566,10 @@ body::before {
       <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 10px">
         <input type="checkbox" id="re-coop" style="width:18px;height:18px;cursor:pointer;accent-color:#38bdf8">
         <label for="re-coop" class="form-lbl" style="margin:0;cursor:pointer;">🤝 Co-op quest</label>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
+        <input type="checkbox" id="re-xponly" style="width:18px;height:18px;cursor:pointer;accent-color:var(--gold)">
+        <label for="re-xponly" class="form-lbl" style="margin:0;cursor:pointer;">⚡ XP Only (no point payout)</label>
       </div>
       <button class="post-btn" onclick="saveRecurEdit()">⏰ Save Changes</button>
     </div>
@@ -1653,7 +1691,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v19</div>
+<div class="version-tag">v20</div>
 
 <script>
 // ============================================================
@@ -2568,7 +2606,7 @@ function renderRecurring() {
       <div class="recur-emoji">${r.emoji||'⏰'}</div>
       <div class="recur-info">
         <div class="recur-name">${r.title}</div>
-        <div class="recur-meta">${r.player==='both'?'Both heroes':r.player} · ${r.pts} pts · ${r.diff}${r.deadline?` · ⏳ ${r.deadline}h`:''}${r.firstClaim?' · ⚡ first wins':''}</div>
+        <div class="recur-meta">${r.player==='both'?'Both heroes':r.player} · ${r.pts} pts · ${r.diff}${r.xpOnly?' · ⚡ XP only':''}${r.deadline?` · ⏳ ${r.deadline}h`:''}${r.firstClaim?' · ⚡ first wins':''}${r.coop?' · 🤝 co-op':''}</div>
         <div class="recur-schedule">${scheduleHtml}</div>
         <div class="recur-next-badge">${r.paused?'⏸ Paused':'⏭ '+nextStr}</div>
       </div>
@@ -2680,6 +2718,7 @@ function openRecurEdit(id) {
   document.getElementById('re-deadline').value  = r.deadline||0;
   document.getElementById('re-firstclaim').checked = r.firstClaim||false;
   document.getElementById('re-coop').checked       = r.coop||false;
+  document.getElementById('re-xponly').checked     = r.xpOnly||false;
   // Set day picker
   updateReEditDayPicker();
   const days = r.days||[];
@@ -2731,6 +2770,7 @@ function saveRecurEdit() {
   r.deadline   = parseInt(document.getElementById('re-deadline').value)||null;
   r.firstClaim = document.getElementById('re-firstclaim').checked;
   r.coop       = document.getElementById('re-coop').checked;
+  r.xpOnly     = document.getElementById('re-xponly').checked;
   if (r.freq === 'monthly') {
     r.monthDay = parseInt(document.getElementById('re-monthday').value)||1;
     r.days = [];
@@ -2753,6 +2793,7 @@ function saveRecurring() {
   const deadline   = parseInt(document.getElementById('rc-deadline').value)||24;
   const firstClaim = document.getElementById('rc-firstclaim').checked;
   const coop       = document.getElementById('rc-coop').checked;
+  const xpOnly     = document.getElementById('rc-xponly').checked;
   let days = [], monthDay = null;
   if (freq === 'monthly') {
     monthDay = parseInt(document.getElementById('rc-monthday').value)||1;
@@ -2762,11 +2803,13 @@ function saveRecurring() {
   }
   if (!title) { showNotif('Enter a title'); return; }
   S.recurring = S.recurring||[];
-  S.recurring.push({id:'r'+Date.now(), player, title, desc, pts, diff, emoji, freq, days, monthDay, deadline, firstClaim, coop, paused:false, lastPosted:null});
+  S.recurring.push({id:'r'+Date.now(), player, title, desc, pts, diff, emoji, freq, days, monthDay, deadline, firstClaim, coop, xpOnly, paused:false, lastPosted:null});
   save(); closeRecurForm();
   ['rc-title','rc-desc','rc-pts','rc-emoji'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('rc-deadline').value = '24';
   document.getElementById('rc-firstclaim').checked = false;
+  document.getElementById('rc-coop').checked = false;
+  document.getElementById('rc-xponly').checked = false;
   renderRecurring();
   showNotif('⏰ Recurring quest saved!');
 }
@@ -2809,7 +2852,7 @@ function processRecurring() {
       if (!alreadyActive) {
         S.subs    = S.subs.filter(s => !(s.recurringId === r.id && s.player === p));
         S.bounties = S.bounties.filter(b => !(b.recurringId === r.id && b.player === p));
-        S.bounties.push({id:'b'+Date.now()+'_'+p+'_r', player:p, title:r.title, desc:r.desc, pts:r.pts, diff:r.diff, emoji:r.emoji, active:true, recurringId:r.id, deadline:r.deadline||null, firstClaim:r.firstClaim||false, coop:r.coop||false, postedAt:new Date().toISOString()});
+        S.bounties.push({id:'b'+Date.now()+'_'+p+'_r', player:p, title:r.title, desc:r.desc, pts:r.pts, diff:r.diff, emoji:r.emoji, active:true, recurringId:r.id, deadline:r.deadline||null, firstClaim:r.firstClaim||false, coop:r.coop||false, xpOnly:r.xpOnly||false, postedAt:new Date().toISOString()});
         anyPosted = true;
       }
     });
@@ -2829,12 +2872,13 @@ function renderScores() {
   });
   const hist=document.getElementById('hist-list');
   if(!S.history.length){hist.innerHTML=`<div class="empty-st" style="padding:14px"><div class="empty-txt">No history yet</div></div>`;return;}
-  hist.innerHTML=S.history.slice(0,30).map(h=>`
-    <div class="hist-item">
+  hist.innerHTML=S.history.map((h,i)=>`
+    <div class="hist-item" style="gap:8px;">
       <span class="h-tag ${h.player}-tag">${h.player}</span>
-      <span class="h-name">${h.title}</span>
+      <span class="h-name" style="flex:1">${h.title}</span>
       <span class="h-pts">+${h.pts}${h.xpOnly?' ⚡':''}</span>
       <span class="h-time">${new Date(h.time).toLocaleDateString()}</span>
+      <button onclick="openHistEdit(${i})" style="background:none;border:1px solid var(--border2);color:var(--text-dim);font-size:10px;padding:2px 7px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:1px;">✏️</button>
     </div>`).join('');
 }
 
@@ -2893,6 +2937,38 @@ function applyOverride() {
     document.getElementById('ov-amount').value = '';
     showNotif(`✦ Override applied to ${player}'s ${fieldLabel}`);
   }
+}
+
+// --- History Edit ---
+function openHistEdit(idx) {
+  const h = S.history[idx]; if (!h) return;
+  document.getElementById('he-idx').value      = idx;
+  document.getElementById('he-player').value   = h.player;
+  document.getElementById('he-title').value    = h.title;
+  document.getElementById('he-pts').value      = h.pts;
+  document.getElementById('he-xponly').checked = h.xpOnly||false;
+  document.getElementById('hist-edit-modal').classList.add('active');
+}
+
+function saveHistEdit() {
+  const idx = parseInt(document.getElementById('he-idx').value);
+  if (isNaN(idx) || !S.history[idx]) return;
+  S.history[idx].player = document.getElementById('he-player').value;
+  S.history[idx].title  = document.getElementById('he-title').value.trim() || S.history[idx].title;
+  S.history[idx].pts    = parseInt(document.getElementById('he-pts').value) || S.history[idx].pts;
+  S.history[idx].xpOnly = document.getElementById('he-xponly').checked;
+  save(); closeModal('hist-edit-modal'); renderScores();
+  showNotif('📜 History entry updated');
+}
+
+function deleteHistEntry() {
+  const idx = parseInt(document.getElementById('he-idx').value);
+  if (isNaN(idx)) return;
+  const h = S.history[idx];
+  if (!confirm(`Delete "${h?.title||'this entry'}" from history?\n(Scores are NOT changed — use Commander Override if needed.)`)) return;
+  S.history.splice(idx, 1);
+  save(); closeModal('hist-edit-modal'); renderScores();
+  showNotif('🗑 History entry deleted');
 }
 
 function showNotif(msg) {
