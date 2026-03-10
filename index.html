@@ -1441,9 +1441,17 @@ body::before {
         <div class="form-group"><label class="form-lbl">Difficulty</label><select class="f-select" id="etpl-diff"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
       </div>
       <div class="form-group"><label class="form-lbl">Icon (Emoji)</label><input class="f-input" id="etpl-emoji" type="text" maxlength="4"></div>
-      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
+      <div class="form-group">
+        <label class="form-lbl">⏳ Time Limit (hours, 0 = none)</label>
+        <input class="f-input" id="etpl-deadline" type="number" min="0" placeholder="0">
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 4px">
         <input type="checkbox" id="etpl-xponly" style="width:16px;height:16px;accent-color:var(--gold)">
         <label for="etpl-xponly" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ XP Only (no point payout)</label>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
+        <input type="checkbox" id="etpl-firstclaim" style="width:16px;height:16px;accent-color:#c084fc">
+        <label for="etpl-firstclaim" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ First hero wins</label>
       </div>
       <button class="post-btn" onclick="saveTemplateEdit()">✦ Save Changes</button>
     </div>
@@ -1561,7 +1569,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v16</div>
+<div class="version-tag">v17</div>
 
 <script>
 // ============================================================
@@ -1599,12 +1607,12 @@ let S = {
 let curP = 'fox', curBid = null, curPhoto = null;
 
 const DEFAULTS = [
-  {id:'b1',player:'fox',   title:'Chamber of Cleanliness', desc:'Clean your bedroom — pick up all clothes, make your bed, and tidy your desk. Leave no mess behind!',     pts:100,diff:'easy',  emoji:'🛏️',active:true},
-  {id:'b2',player:'fox',   title:'The Dish Dungeon',        desc:'Rinse all dirty dishes and load the dishwasher completely. Start the cycle when done.',                    pts:80, diff:'easy',  emoji:'🍽️',active:true},
-  {id:'b3',player:'fox',   title:'Trash Titan',             desc:'Empty every trash can in the house, replace the bags, and bring the big bins to the curb.',                pts:120,diff:'medium',emoji:'🗑️',active:true},
-  {id:'b4',player:'forest',title:'The Leaf Conquest',       desc:'Rake all the leaves in the front yard into a pile and bag them up completely. No leaf left behind!',      pts:200,diff:'hard',  emoji:'🍂',active:true},
-  {id:'b5',player:'forest',title:'Vacuum Crusade',          desc:'Vacuum the entire living room and hallway. Move the small furniture to get underneath.',                   pts:150,diff:'medium',emoji:'🧹',active:true},
-  {id:'b6',player:'forest',title:'Table of Champions',      desc:'Wipe down the kitchen table and all countertops with a damp cloth until they gleam.',                     pts:80, diff:'easy',  emoji:'✨',active:true},
+  {id:'b1',player:'fox',   title:'Chamber of Cleanliness', desc:'Clean your bedroom — pick up all clothes, make your bed, and tidy your desk. Leave no mess behind!',     pts:50,diff:'easy',  emoji:'🛏️',active:true},
+  {id:'b2',player:'fox',   title:'The Dish Dungeon',        desc:'Rinse all dirty dishes and load the dishwasher completely. Start the cycle when done.',                    pts:50, diff:'easy',  emoji:'🍽️',active:true},
+  {id:'b3',player:'fox',   title:'Trash Titan',             desc:'Empty every trash can in the house, replace the bags, and bring the big bins to the curb.',                pts:50,diff:'medium',emoji:'🗑️',active:true},
+  {id:'b4',player:'forest',title:'The Leaf Conquest',       desc:'Rake all the leaves in the front yard into a pile and bag them up completely. No leaf left behind!',      pts:50,diff:'hard',  emoji:'🍂',active:true},
+  {id:'b5',player:'forest',title:'Vacuum Crusade',          desc:'Vacuum the entire living room and hallway. Move the small furniture to get underneath.',                   pts:50,diff:'medium',emoji:'🧹',active:true},
+  {id:'b6',player:'forest',title:'Table of Champions',      desc:'Wipe down the kitchen table and all countertops with a damp cloth until they gleam.',                     pts:50, diff:'easy',  emoji:'✨',active:true},
 ];
 
 // ============================================================
@@ -2026,34 +2034,34 @@ function checkPin() {
 // ======= TEMPLATE LIBRARY =======
 const BUILTIN_TEMPLATES = [
   // Morning & Evening
-  { id:'t1',  cat:'Morning & Evening', emoji:'☀️', title:'Morning Routine',       desc:'Get dressed, brush teeth, make your bed, and eat breakfast before school.',      pts:80,  diff:'easy'   },
-  { id:'t2',  cat:'Morning & Evening', emoji:'🌙', title:'Evening Wind-Down',      desc:'Put away toys, lay out clothes for tomorrow, brush teeth, and get into bed on time.',pts:60, diff:'easy'   },
-  { id:'t3',  cat:'Morning & Evening', emoji:'🎒', title:'Backpack Ready',          desc:'Pack your backpack with everything you need for tomorrow. Check the schedule!',  pts:40,  diff:'easy'   },
+  { id:'t1',  cat:'Morning & Evening', emoji:'☀️', title:'Morning Routine',       desc:'Get dressed, brush teeth, make your bed, and eat breakfast before school.',      pts:50,  diff:'easy'   },
+  { id:'t2',  cat:'Morning & Evening', emoji:'🌙', title:'Evening Wind-Down',      desc:'Put away toys, lay out clothes for tomorrow, brush teeth, and get into bed on time.',pts:50, diff:'easy'   },
+  { id:'t3',  cat:'Morning & Evening', emoji:'🎒', title:'Backpack Ready',          desc:'Pack your backpack with everything you need for tomorrow. Check the schedule!',  pts:50,  diff:'easy'   },
   // Kitchen
-  { id:'t4',  cat:'Kitchen', emoji:'🍽️', title:'Dish Duty',              desc:'Rinse all dirty dishes and load them into the dishwasher. Start the cycle.',    pts:80,  diff:'easy'   },
-  { id:'t5',  cat:'Kitchen', emoji:'🧽', title:'Counter Patrol',          desc:'Wipe down the kitchen counters and table with a damp cloth until they shine.',  pts:70,  diff:'easy'   },
-  { id:'t6',  cat:'Kitchen', emoji:'🥣', title:'Unload Dishwasher',       desc:'Unload the clean dishes from the dishwasher and put everything away properly.',pts:70,  diff:'easy'   },
-  { id:'t7',  cat:'Kitchen', emoji:'🗑️', title:'Kitchen Trash',           desc:'Empty the kitchen trash, put in a new bag, and take the bag to the outside bin.',pts:60, diff:'easy'   },
-  { id:'t8',  cat:'Kitchen', emoji:'🧹', title:'Sweep the Kitchen',       desc:'Sweep the kitchen floor and collect all the dirt into a dustpan and throw it away.',pts:80,diff:'easy' },
+  { id:'t4',  cat:'Kitchen', emoji:'🍽️', title:'Dish Duty',              desc:'Rinse all dirty dishes and load them into the dishwasher. Start the cycle.',    pts:50,  diff:'easy'   },
+  { id:'t5',  cat:'Kitchen', emoji:'🧽', title:'Counter Patrol',          desc:'Wipe down the kitchen counters and table with a damp cloth until they shine.',  pts:50,  diff:'easy'   },
+  { id:'t6',  cat:'Kitchen', emoji:'🥣', title:'Unload Dishwasher',       desc:'Unload the clean dishes from the dishwasher and put everything away properly.',pts:50,  diff:'easy'   },
+  { id:'t7',  cat:'Kitchen', emoji:'🗑️', title:'Kitchen Trash',           desc:'Empty the kitchen trash, put in a new bag, and take the bag to the outside bin.',pts:50, diff:'easy'   },
+  { id:'t8',  cat:'Kitchen', emoji:'🧹', title:'Sweep the Kitchen',       desc:'Sweep the kitchen floor and collect all the dirt into a dustpan and throw it away.',pts:50,diff:'easy' },
   // Bedroom
   { id:'t9',  cat:'Bedroom', emoji:'🛏️', title:'Make the Bed',            desc:'Pull up the sheets, arrange the pillows, and make the bed look neat and tidy.', pts:50,  diff:'easy'   },
-  { id:'t10', cat:'Bedroom', emoji:'👕', title:'Laundry Sort',             desc:'Sort your dirty clothes into the hamper and bring it to the laundry room.',    pts:60,  diff:'easy'   },
-  { id:'t11', cat:'Bedroom', emoji:'📚', title:'Bookshelf Tidy',           desc:'Put all books back on the shelf in order and clear the floor around it.',       pts:60,  diff:'easy'   },
-  { id:'t12', cat:'Bedroom', emoji:'🧸', title:'Toy Roundup',              desc:'Pick up every toy off the floor and put them all back where they belong.',      pts:70,  diff:'easy'   },
+  { id:'t10', cat:'Bedroom', emoji:'👕', title:'Laundry Sort',             desc:'Sort your dirty clothes into the hamper and bring it to the laundry room.',    pts:50,  diff:'easy'   },
+  { id:'t11', cat:'Bedroom', emoji:'📚', title:'Bookshelf Tidy',           desc:'Put all books back on the shelf in order and clear the floor around it.',       pts:50,  diff:'easy'   },
+  { id:'t12', cat:'Bedroom', emoji:'🧸', title:'Toy Roundup',              desc:'Pick up every toy off the floor and put them all back where they belong.',      pts:50,  diff:'easy'   },
   // Living Areas
-  { id:'t13', cat:'Living Areas', emoji:'🧹', title:'Vacuum Living Room',   desc:'Vacuum the entire living room carpet or floor, moving small items to reach underneath.',pts:150,diff:'medium'},
-  { id:'t14', cat:'Living Areas', emoji:'🛋️', title:'Couch Cushion Rescue',  desc:'Take all cushions off the couch, vacuum underneath, fluff cushions, and put them back.',pts:80,diff:'easy'},
-  { id:'t15', cat:'Living Areas', emoji:'👟', title:'Shoe Area Cleanup',     desc:'Pair up all shoes by the door, put them on the rack, and wipe the floor underneath.',pts:70,diff:'easy'},
-  { id:'t16', cat:'Living Areas', emoji:'🪟', title:'Window Wipe-Down',      desc:'Wipe all the low windows and sliding doors with a damp cloth to remove fingerprints.',pts:90,diff:'easy'},
+  { id:'t13', cat:'Living Areas', emoji:'🧹', title:'Vacuum Living Room',   desc:'Vacuum the entire living room carpet or floor, moving small items to reach underneath.',pts:50,diff:'medium'},
+  { id:'t14', cat:'Living Areas', emoji:'🛋️', title:'Couch Cushion Rescue',  desc:'Take all cushions off the couch, vacuum underneath, fluff cushions, and put them back.',pts:50,diff:'easy'},
+  { id:'t15', cat:'Living Areas', emoji:'👟', title:'Shoe Area Cleanup',     desc:'Pair up all shoes by the door, put them on the rack, and wipe the floor underneath.',pts:50,diff:'easy'},
+  { id:'t16', cat:'Living Areas', emoji:'🪟', title:'Window Wipe-Down',      desc:'Wipe all the low windows and sliding doors with a damp cloth to remove fingerprints.',pts:50,diff:'easy'},
   // Outdoors
-  { id:'t17', cat:'Outdoors', emoji:'🍂', title:'Leaf Patrol',             desc:'Rake leaves from the front yard into a pile, bag them up, and place bags at the curb.',pts:200,diff:'hard'  },
-  { id:'t18', cat:'Outdoors', emoji:'🌱', title:'Water the Plants',        desc:'Water all the indoor and outdoor plants. Check the soil first — don\'t over-water!',  pts:60, diff:'easy'   },
-  { id:'t19', cat:'Outdoors', emoji:'🚗', title:'Garage Tidy',             desc:'Put bikes back in place, stack anything on the floor, and sweep the garage entrance.',pts:150,diff:'medium'},
-  { id:'t20', cat:'Outdoors', emoji:'🐕', title:'Pet Zone Cleanup',        desc:'Clean up after the pet — pick up toys, refill water bowl, and sweep the feeding area.',pts:80,diff:'easy'},
+  { id:'t17', cat:'Outdoors', emoji:'🍂', title:'Leaf Patrol',             desc:'Rake leaves from the front yard into a pile, bag them up, and place bags at the curb.',pts:50,diff:'hard'  },
+  { id:'t18', cat:'Outdoors', emoji:'🌱', title:'Water the Plants',        desc:'Water all the indoor and outdoor plants. Check the soil first — don\'t over-water!',  pts:50, diff:'easy'   },
+  { id:'t19', cat:'Outdoors', emoji:'🚗', title:'Garage Tidy',             desc:'Put bikes back in place, stack anything on the floor, and sweep the garage entrance.',pts:50,diff:'medium'},
+  { id:'t20', cat:'Outdoors', emoji:'🐕', title:'Pet Zone Cleanup',        desc:'Clean up after the pet — pick up toys, refill water bowl, and sweep the feeding area.',pts:50,diff:'easy'},
   // Trash & Laundry
-  { id:'t21', cat:'Trash & Laundry', emoji:'♻️', title:'Trash Titan',       desc:'Empty all trash cans in the house into one bag and put it in the outside bin.',    pts:120, diff:'medium' },
-  { id:'t22', cat:'Trash & Laundry', emoji:'🧺', title:'Laundry Folder',    desc:'Take the clean laundry from the dryer, fold everything neatly, and put it away.',   pts:130, diff:'medium' },
-  { id:'t23', cat:'Trash & Laundry', emoji:'👚', title:'Put Away Clothes',  desc:'Put all your clean folded clothes away in the right drawers and closet spots.',      pts:70,  diff:'easy'   },
+  { id:'t21', cat:'Trash & Laundry', emoji:'♻️', title:'Trash Titan',       desc:'Empty all trash cans in the house into one bag and put it in the outside bin.',    pts:50, diff:'medium' },
+  { id:'t22', cat:'Trash & Laundry', emoji:'🧺', title:'Laundry Folder',    desc:'Take the clean laundry from the dryer, fold everything neatly, and put it away.',   pts:50, diff:'medium' },
+  { id:'t23', cat:'Trash & Laundry', emoji:'👚', title:'Put Away Clothes',  desc:'Put all your clean folded clothes away in the right drawers and closet spots.',      pts:50,  diff:'easy'   },
 ];
 
 let selectedTemplate = null;
@@ -2293,7 +2301,9 @@ function editTemplate(id) {
   document.getElementById('etpl-pts').value = t.pts||50;
   document.getElementById('etpl-diff').value = t.diff||'easy';
   document.getElementById('etpl-emoji').value = t.emoji||'⚔️';
+  document.getElementById('etpl-deadline').value = t.deadline||0;
   document.getElementById('etpl-xponly').checked = t.xpOnly||false;
+  document.getElementById('etpl-firstclaim').checked = t.firstClaim||false;
   document.getElementById('tpl-edit-modal').classList.add('active');
 }
 
@@ -2307,6 +2317,8 @@ function saveTemplateEdit() {
     diff:  document.getElementById('etpl-diff').value,
     emoji: document.getElementById('etpl-emoji').value.trim()||'⚔️',
     xpOnly:document.getElementById('etpl-xponly').checked,
+    firstClaim: document.getElementById('etpl-firstclaim').checked,
+    deadline: parseInt(document.getElementById('etpl-deadline').value)||null,
   };
   if (isBuiltin) {
     // Convert built-in to custom override
@@ -2402,7 +2414,7 @@ function postTemplate(player) {
   const t = selectedTemplate;
   const ts = Date.now();
   (player==='both'?['fox','forest']:[player]).forEach(p=>{
-    S.bounties.push({id:'b'+ts+'_'+p,player:p,title:t.title,desc:t.desc,pts:t.pts,diff:t.diff,emoji:t.emoji,active:true});
+    S.bounties.push({id:'b'+ts+'_'+p, player:p, title:t.title, desc:t.desc, pts:t.pts, diff:t.diff, emoji:t.emoji, active:true, xpOnly:t.xpOnly||false, firstClaim:t.firstClaim||false, deadline:t.deadline||null, postedAt: t.deadline ? new Date().toISOString() : null});
   });
   save();
   showNotif(`⚔️ "${t.title}" posted!`);
