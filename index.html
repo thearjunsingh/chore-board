@@ -1301,6 +1301,7 @@ body::before {
           <select id="ov-field" class="f-input" style="flex:1;min-width:90px;">
             <option value="xp">XP (Rank)</option>
             <option value="balance">Points (Wallet)</option>
+            <option value="cleared">Quests Cleared</option>
           </select>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px;">
@@ -1336,7 +1337,7 @@ body::before {
         <div class="form-group"><label class="form-lbl">Quest Title</label><input class="f-input" id="rc-title" type="text" placeholder="e.g. Morning Routine"></div>
         <div class="form-group"><label class="form-lbl">Description</label><textarea class="f-textarea" id="rc-desc" placeholder="What needs to be done..." style="min-height:60px"></textarea></div>
         <div class="form-row">
-          <div class="form-group"><label class="form-lbl">Points</label><input class="f-input" id="rc-pts" type="number" placeholder="80" min="10" step="10"></div>
+          <div class="form-group"><label class="form-lbl">Points</label><input class="f-input" id="rc-pts" type="number" placeholder="50" min="10" step="10"></div>
           <div class="form-group"><label class="form-lbl">Difficulty</label><select class="f-select" id="rc-diff"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
         </div>
         <div class="form-group"><label class="form-lbl">Icon</label><input class="f-input" id="rc-emoji" type="text" placeholder="☀️" maxlength="4"></div>
@@ -1403,7 +1404,7 @@ body::before {
         <div class="form-group"><label class="form-lbl">Quest Title</label><input class="f-input" id="new-title" type="text" placeholder="e.g. Chamber of Cleanliness"></div>
         <div class="form-group"><label class="form-lbl">Quest Description</label><textarea class="f-textarea" id="new-desc" placeholder="Describe exactly what must be done..."></textarea></div>
         <div class="form-row">
-          <div class="form-group"><label class="form-lbl">Points Reward</label><input class="f-input" id="new-pts" type="number" placeholder="100" min="10" step="10"></div>
+          <div class="form-group"><label class="form-lbl">Points Reward</label><input class="f-input" id="new-pts" type="number" placeholder="50" min="10" step="10"></div>
           <div class="form-group"><label class="form-lbl">Difficulty</label><select class="f-select" id="new-diff"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
         </div>
         <div class="form-group"><label class="form-lbl">Icon (Emoji)</label><input class="f-input" id="new-emoji" type="text" placeholder="🧹" maxlength="4"></div>
@@ -1445,6 +1446,39 @@ body::before {
         <label for="etpl-xponly" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ XP Only (no point payout)</label>
       </div>
       <button class="post-btn" onclick="saveTemplateEdit()">✦ Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHORE EDIT MODAL -->
+<div class="modal-overlay" id="chore-edit-modal">
+  <div class="modal">
+    <div class="modal-bar" style="background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)"></div>
+    <div class="modal-head"><div class="modal-htitle">✏️ Edit Chore</div><button class="modal-x" onclick="closeModal('chore-edit-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="ce-id">
+      <div class="form-group"><label class="form-lbl">Title</label><input class="f-input" id="ce-title" type="text"></div>
+      <div class="form-group"><label class="form-lbl">Description</label><textarea class="f-textarea" id="ce-desc" style="min-height:60px"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-lbl">Points</label><input class="f-input" id="ce-pts" type="number" min="10" step="10"></div>
+        <div class="form-group"><label class="form-lbl">Difficulty</label><select class="f-select" id="ce-diff"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-lbl">Icon (Emoji)</label><input class="f-input" id="ce-emoji" type="text" maxlength="4"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-lbl">⏳ Time Limit (hours, 0 = none)</label>
+          <input class="f-input" id="ce-deadline" type="number" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 4px">
+        <input type="checkbox" id="ce-xponly" style="width:16px;height:16px;accent-color:var(--gold)">
+        <label for="ce-xponly" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ XP Only</label>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 14px">
+        <input type="checkbox" id="ce-firstclaim" style="width:16px;height:16px;accent-color:#c084fc">
+        <label for="ce-firstclaim" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ First hero wins</label>
+      </div>
+      <button class="post-btn" onclick="saveChoreEdit()">✦ Save Changes</button>
     </div>
   </div>
 </div>
@@ -1527,7 +1561,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v15</div>
+<div class="version-tag">v16</div>
 
 <script>
 // ============================================================
@@ -2130,29 +2164,71 @@ function renderManage() {
     const el = document.getElementById('mgr-'+p);
     const list = S.bounties.filter(b=>b.player===p);
     if (!list.length) { el.innerHTML=`<div class="empty-st" style="padding:14px"><div class="empty-txt">No quests yet</div></div>`; return; }
-    el.innerHTML = list.map(b=>`
-      <div class="mgr">
+    el.innerHTML = list.map(b=>{
+      const meta = [
+        b.pts + ' pts',
+        b.diff,
+        b.recurringId ? '🔁 recurring' : '',
+        b.deadline    ? `⏳ ${b.deadline}h` : '',
+        b.firstClaim  ? '⚡ first wins' : '',
+        b.xpOnly      ? '⚡ XP only' : '',
+      ].filter(Boolean).join(' · ');
+      return `<div class="mgr">
         <div class="mgr-emoji">${b.emoji||'⚔️'}</div>
         <div class="mgr-info">
           <div class="mgr-name">${b.title}</div>
-          <div class="mgr-meta">${b.pts} pts · ${b.diff}${b.recurringId?' · 🔁 recurring':''}</div>
+          <div class="mgr-meta">${meta}</div>
         </div>
         <div class="mgr-acts">
-          <button class="tog-b ${b.active?'on':''}" onclick="togB('${b.id}')">${b.active?'Active':'Off'}</button>
+          <button class="tog-b" onclick="openChoreEdit('${b.id}')">Edit</button>
+          <button class="tog-b ${b.active?'on':''}" onclick="togB('${b.id}')">${b.active?'On':'Off'}</button>
           <button class="del-b" onclick="delB('${b.id}')">Del</button>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   });
 }
 
 function togB(id) { const b=S.bounties.find(x=>x.id===id); if(b){b.active=!b.active;save();renderManage();} }
 function delB(id) { if(!confirm('Delete this quest?'))return; S.bounties=S.bounties.filter(x=>x.id!==id); S.subs=S.subs.filter(x=>x.bountyId!==id); save();renderManage(); }
 
+function openChoreEdit(id) {
+  const b = S.bounties.find(x=>x.id===id); if(!b) return;
+  document.getElementById('ce-id').value        = id;
+  document.getElementById('ce-title').value     = b.title;
+  document.getElementById('ce-desc').value      = b.desc||'';
+  document.getElementById('ce-pts').value       = b.pts||50;
+  document.getElementById('ce-diff').value      = b.diff||'easy';
+  document.getElementById('ce-emoji').value     = b.emoji||'⚔️';
+  document.getElementById('ce-deadline').value  = b.deadline||0;
+  document.getElementById('ce-xponly').checked  = b.xpOnly||false;
+  document.getElementById('ce-firstclaim').checked = b.firstClaim||false;
+  document.getElementById('chore-edit-modal').classList.add('active');
+}
+
+function saveChoreEdit() {
+  const id = document.getElementById('ce-id').value;
+  const b  = S.bounties.find(x=>x.id===id); if(!b) return;
+  b.title      = document.getElementById('ce-title').value.trim() || b.title;
+  b.desc       = document.getElementById('ce-desc').value.trim();
+  b.pts        = parseInt(document.getElementById('ce-pts').value)||50;
+  b.diff       = document.getElementById('ce-diff').value;
+  b.emoji      = document.getElementById('ce-emoji').value.trim()||'⚔️';
+  const dl     = parseInt(document.getElementById('ce-deadline').value)||0;
+  b.deadline   = dl > 0 ? dl : null;
+  // Only reset postedAt if deadline was just added and quest has no postedAt yet
+  if (b.deadline && !b.postedAt) b.postedAt = new Date().toISOString();
+  b.xpOnly     = document.getElementById('ce-xponly').checked;
+  b.firstClaim = document.getElementById('ce-firstclaim').checked;
+  save(); closeModal('chore-edit-modal'); renderManage();
+  showNotif('✦ Chore updated!');
+}
+
 function addBounty() {
   const player=document.getElementById('new-player').value;
   const title=document.getElementById('new-title').value.trim();
   const desc=document.getElementById('new-desc').value.trim();
-  const pts=parseInt(document.getElementById('new-pts').value)||100;
+  const pts=parseInt(document.getElementById('new-pts').value)||50;
   const diff=document.getElementById('new-diff').value;
   const emoji=document.getElementById('new-emoji').value.trim()||'⚔️';
   const saveLib=document.getElementById('save-to-lib').checked;
@@ -2214,7 +2290,7 @@ function editTemplate(id) {
   document.getElementById('etpl-isbuiltin').value = isBuiltin ? '1' : '0';
   document.getElementById('etpl-title').value = t.title;
   document.getElementById('etpl-desc').value = t.desc||'';
-  document.getElementById('etpl-pts').value = t.pts||100;
+  document.getElementById('etpl-pts').value = t.pts||50;
   document.getElementById('etpl-diff').value = t.diff||'easy';
   document.getElementById('etpl-emoji').value = t.emoji||'⚔️';
   document.getElementById('etpl-xponly').checked = t.xpOnly||false;
@@ -2227,7 +2303,7 @@ function saveTemplateEdit() {
   const newData = {
     title: document.getElementById('etpl-title').value.trim(),
     desc:  document.getElementById('etpl-desc').value.trim(),
-    pts:   parseInt(document.getElementById('etpl-pts').value)||100,
+    pts:   parseInt(document.getElementById('etpl-pts').value)||50,
     diff:  document.getElementById('etpl-diff').value,
     emoji: document.getElementById('etpl-emoji').value.trim()||'⚔️',
     xpOnly:document.getElementById('etpl-xponly').checked,
@@ -2427,7 +2503,7 @@ function saveRecurring() {
   const player=document.getElementById('rc-player').value;
   const title=document.getElementById('rc-title').value.trim();
   const desc=document.getElementById('rc-desc').value.trim();
-  const pts=parseInt(document.getElementById('rc-pts').value)||80;
+  const pts=parseInt(document.getElementById('rc-pts').value)||50;
   const diff=document.getElementById('rc-diff').value;
   const emoji=document.getElementById('rc-emoji').value.trim()||'⏰';
   const deadline=parseInt(document.getElementById('rc-deadline').value)||24;
