@@ -400,6 +400,14 @@ body::before {
 .bc-desc { font-size: 14px; color: var(--text-dim); line-height: 1.55; margin-bottom: 14px; font-style: italic; }
 
 .bc-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--border); }
+.speak-btn {
+  background: none; border: 1px solid var(--border2); color: var(--text-dim);
+  width: 34px; height: 34px; border-radius: 50%; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.speak-btn:active, .speak-btn.speaking { border-color: var(--gold-dim); color: var(--gold); transform: scale(1.15); }
 .bc-pts { font-family: 'Cinzel Decorative', serif; font-size: 20px; font-weight: 700; color: var(--gold-bright); line-height: 1; }
 .bc-money { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
 
@@ -1449,7 +1457,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v11</div>
+<div class="version-tag">v12</div>
 
 <script>
 // ============================================================
@@ -1668,6 +1676,29 @@ function enterBoard(p) {
 }
 
 
+function speakChore(title, desc, btn) {
+  if (!window.speechSynthesis) return;
+  // Stop any current speech
+  window.speechSynthesis.cancel();
+  // If already speaking this one, just stop
+  if (btn && btn.classList.contains('speaking')) {
+    btn.classList.remove('speaking');
+    btn.textContent = '🔊';
+    return;
+  }
+  // Reset all other speak buttons
+  document.querySelectorAll('.speak-btn').forEach(b => { b.classList.remove('speaking'); b.textContent = '🔊'; });
+  const text = title + '. ' + desc;
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.88;   // slightly slower — good for kids
+  utt.pitch = 1.05;
+  utt.lang = 'en-US';
+  if (btn) { btn.classList.add('speaking'); btn.textContent = '🔉'; }
+  utt.onend = () => { if (btn) { btn.classList.remove('speaking'); btn.textContent = '🔊'; } };
+  utt.onerror = () => { if (btn) { btn.classList.remove('speaking'); btn.textContent = '🔊'; } };
+  window.speechSynthesis.speak(utt);
+}
+
 function renderBoard() {
   if (!S.subs)    S.subs    = [];
   if (!S.bounties) S.bounties = [];
@@ -1702,7 +1733,10 @@ function renderBoard() {
         <div class="bc-desc">${b.desc}</div>
         <div class="bc-footer">
           <div>${rewardLabel}</div>
-          ${can?`<button class="claim-btn ${p}" onclick="event.stopPropagation();openClaim('${b.id}')">Claim</button>`:''}
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="speak-btn" onclick="event.stopPropagation();speakChore('${b.title.replace(/'/g,"\\'")}','${b.desc.replace(/'/g,"\\'")}',this)" title="Read aloud">🔊</button>
+            ${can?`<button class="claim-btn ${p}" onclick="event.stopPropagation();openClaim('${b.id}')">Claim</button>`:''}
+          </div>
         </div>
       </div>
     </div>`;
