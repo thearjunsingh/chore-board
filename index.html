@@ -368,6 +368,31 @@ body::before {
 .bounty-card.forest:not(.done):not(.pend):hover { border-color: var(--forest-primary); box-shadow: 0 8px 28px var(--forest-glow); }
 .bounty-card.done { opacity: 0.45; cursor: default; }
 .bounty-card.pend { opacity: 0.65; cursor: default; }
+/* Completed section */
+.completed-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; margin: 8px 16px 0;
+  font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--gold-dim);
+  border: 1px solid var(--border2); cursor: pointer;
+  background: var(--panel2); touch-action: manipulation;
+}
+.completed-header:active { opacity: 0.7; }
+/* Countdown badge on card */
+.bc-countdown {
+  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 3px;
+  margin-bottom: 8px; display: inline-block;
+}
+.bc-countdown.ok   { background: rgba(58,170,53,0.15); color: var(--fox-bright); border: 1px solid var(--fox-dark); }
+.bc-countdown.warn { background: rgba(232,130,12,0.15); color: var(--forest-bright); border: 1px solid var(--forest-dark); }
+.bc-countdown.expired { background: rgba(180,40,40,0.15); color: #ff6b6b; border: 1px solid #7a1a1a; }
+/* First-claim badge */
+.bc-firstclaim {
+  font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px;
+  text-transform: uppercase; color: #c084fc; border: 1px solid #7c3aed44;
+  background: rgba(124,58,237,0.1); padding: 2px 7px; display: inline-block; margin-bottom: 6px;
+}
 
 .bc-top { height: 2px; }
 .bounty-card.fox .bc-top { background: linear-gradient(90deg, transparent, var(--fox-primary), transparent); }
@@ -1204,6 +1229,14 @@ body::before {
     </div>
   </div>
   <div class="bounty-grid" id="bounty-grid"></div>
+  <!-- Completed quests section -->
+  <div id="completed-section" style="display:none;">
+    <div class="completed-header" onclick="toggleCompleted()">
+      <span id="completed-label">✦ Completed Quests</span>
+      <span id="completed-chevron">▼</span>
+    </div>
+    <div class="bounty-grid" id="completed-grid" style="display:none;"></div>
+  </div>
 </div>
 
 <!-- ADMIN -->
@@ -1258,6 +1291,29 @@ body::before {
       <div id="hist-list"></div>
 
       <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);">
+        <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:14px;">⚔️ Commander Override</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Manually correct XP or points if a sync error occurs.</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <select id="ov-player" class="f-input" style="flex:1;min-width:90px;">
+            <option value="fox">Fox</option>
+            <option value="forest">Forest</option>
+          </select>
+          <select id="ov-field" class="f-input" style="flex:1;min-width:90px;">
+            <option value="xp">XP (Rank)</option>
+            <option value="balance">Points (Wallet)</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <select id="ov-op" class="f-input" style="flex:1;">
+            <option value="add">Add</option>
+            <option value="sub">Subtract</option>
+            <option value="set">Set to exact</option>
+          </select>
+          <input id="ov-amount" type="number" class="f-input" style="flex:1;" placeholder="Amount" min="0">
+        </div>
+        <button class="post-btn" style="background:var(--border2);color:var(--text);width:100%;" onclick="applyOverride()">⚔️ Apply Override</button>
+      </div>
+      <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);">
         <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">Change Passcode</div>
         <div class="form-group"><label class="form-lbl">Current Passcode</label><input class="f-input" id="pin-current" type="password" maxlength="8" placeholder="Current code"></div>
         <div class="form-group"><label class="form-lbl">New Passcode</label><input class="f-input" id="pin-new" type="password" maxlength="8" placeholder="New code (min 4 digits)"></div>
@@ -1289,6 +1345,16 @@ body::before {
           <div class="freq-row">
             <button class="freq-opt sel" id="freq-daily" onclick="setFreq('daily')">Daily</button>
             <button class="freq-opt" id="freq-weekly" onclick="setFreq('weekly')">Weekly</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-lbl">⏳ Time Limit (hours)</label>
+            <input class="f-input" id="rc-deadline" type="number" placeholder="24" min="1" max="168" value="24">
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:22px;">
+            <input type="checkbox" id="rc-firstclaim" style="width:18px;height:18px;cursor:pointer;">
+            <label for="rc-firstclaim" class="form-lbl" style="margin:0;cursor:pointer;">⚡ First hero wins</label>
           </div>
         </div>
         <div class="form-group" id="day-picker-wrap">
@@ -1348,6 +1414,10 @@ body::before {
         <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 10px">
           <input type="checkbox" id="new-xp-only" style="width:16px;height:16px;accent-color:var(--gold)">
           <label for="new-xp-only" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ XP Only (no point payout)</label>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 10px">
+          <input type="checkbox" id="new-firstclaim" style="width:16px;height:16px;accent-color:#c084fc">
+          <label for="new-firstclaim" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;">⚡ First hero wins (removes from other after claim)</label>
         </div>
         <button class="post-btn" onclick="addBounty()">⚔️ Post Quest</button>
       </div>
@@ -1457,7 +1527,7 @@ body::before {
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v12</div>
+<div class="version-tag">v15</div>
 
 <script>
 // ============================================================
@@ -1591,6 +1661,13 @@ function hideLoading() {
   el.style.transition = 'opacity 0.4s';
   el.style.opacity = '0';
   setTimeout(() => el.style.display = 'none', 400);
+  // Refresh board every minute so countdowns update and expired tasks are removed
+  setInterval(() => {
+    if (document.getElementById('board').classList.contains('active') ||
+        document.getElementById('board').style.display !== 'none') {
+      renderBoard();
+    }
+  }, 60000);
 }
 
 // Debounced save — batches rapid changes into one write
@@ -1699,48 +1776,127 @@ function speakChore(title, desc, btn) {
   window.speechSynthesis.speak(utt);
 }
 
-function renderBoard() {
-  if (!S.subs)    S.subs    = [];
-  if (!S.bounties) S.bounties = [];
-  const p = curP, xp = S[p]?.xp||0, bal = S[p]?.balance||0;
-  document.getElementById('bpts').textContent = xp.toLocaleString() + ' XP';
-  document.getElementById('bmoney').textContent = bal.toLocaleString() + ' pts';
-  const grid = document.getElementById('bounty-grid');
-  const list = S.bounties.filter(b => b.player === p && b.active);
-  if (!list.length) {
-    grid.innerHTML = `<div class="empty-st"><div class="empty-ico">📜</div><div class="empty-txt">No quests on the board yet</div></div>`;
-    return;
-  }
-  grid.innerHTML = list.map(b => {
-    const sub = S.subs.find(s => s.bountyId === b.id && s.player === p);
-    const done = sub && sub.status === 'approved';
-    const pend = sub && sub.status === 'pending';
-    const cls = done ? 'done' : pend ? 'pend' : '';
-    const rib = done ? 'COMPLETE' : pend ? 'PENDING' : '';
-    const can = !done && !pend;
-    const isXpOnly = b.xpOnly || false;
-    const rewardLabel = isXpOnly
-      ? `<div class="bc-pts xp-only-pts">✨ XP Only</div><div class="bc-money">no coin reward</div>`
-      : `<div class="bc-pts">${b.pts}</div><div class="bc-money">${b.pts} points</div>`;
-    return `<div class="bounty-card ${p} ${cls}" onclick="${can?`openClaim('${b.id}')`:''}" >
-      <div class="bc-top"></div>
-      <div class="bc-ribbon">${rib}</div>
-      ${isXpOnly ? '<div class="xp-only-badge">⚡ XP Only</div>' : ''}
-      <div class="bc-icon">${b.emoji||'⚔️'}</div>
-      <div class="bc-body">
-        <div class="bc-meta"><span class="diff-tag diff-${b.diff}">${b.diff}</span></div>
-        <div class="bc-title">${b.title}</div>
-        <div class="bc-desc">${b.desc}</div>
-        <div class="bc-footer">
-          <div>${rewardLabel}</div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="speak-btn" onclick="event.stopPropagation();speakChore('${b.title.replace(/'/g,"\\'")}','${b.desc.replace(/'/g,"\\'")}',this)" title="Read aloud">🔊</button>
-            ${can?`<button class="claim-btn ${p}" onclick="event.stopPropagation();openClaim('${b.id}')">Claim</button>`:''}
-          </div>
+function getCountdownHtml(b) {
+  if (!b.deadline || !b.postedAt) return '';
+  const expiry = new Date(b.postedAt).getTime() + b.deadline * 60 * 60 * 1000;
+  const remaining = expiry - Date.now();
+  if (remaining <= 0) return `<div class="bc-countdown expired">⏰ Time expired</div>`;
+  const h = Math.floor(remaining / 3600000);
+  const m = Math.floor((remaining % 3600000) / 60000);
+  const cls = remaining < 3 * 3600000 ? 'warn' : 'ok';
+  return `<div class="bc-countdown ${cls}">⏳ ${h}h ${m}m left</div>`;
+}
+
+function makeBountyCard(b, p, cls, rib, can) {
+  const isXpOnly = b.xpOnly || false;
+  const rewardLabel = isXpOnly
+    ? `<div class="bc-pts xp-only-pts">✨ XP Only</div><div class="bc-money">no coin reward</div>`
+    : `<div class="bc-pts">${b.pts}</div><div class="bc-money">${b.pts} points</div>`;
+  const countdownHtml = (cls === '' || cls === 'pend') ? getCountdownHtml(b) : '';
+  const firstClaimHtml = b.firstClaim ? `<div class="bc-firstclaim">⚡ First hero wins</div>` : '';
+  return `<div class="bounty-card ${p} ${cls}" onclick="${can?`openClaim('${b.id}')`:''}" >
+    <div class="bc-top"></div>
+    <div class="bc-ribbon">${rib}</div>
+    ${isXpOnly ? '<div class="xp-only-badge">⚡ XP Only</div>' : ''}
+    <div class="bc-icon">${b.emoji||'⚔️'}</div>
+    <div class="bc-body">
+      <div class="bc-meta"><span class="diff-tag diff-${b.diff}">${b.diff}</span></div>
+      ${countdownHtml}
+      ${firstClaimHtml}
+      <div class="bc-title">${b.title}</div>
+      <div class="bc-desc">${b.desc}</div>
+      <div class="bc-footer">
+        <div>${rewardLabel}</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="speak-btn" onclick="event.stopPropagation();speakChore('${b.title.replace(/'/g,"\\'")}','${b.desc.replace(/'/g,"\\'")}',this)" title="Read aloud">🔊</button>
+          ${can?`<button class="claim-btn ${p}" onclick="event.stopPropagation();openClaim('${b.id}')">Claim</button>`:''}
         </div>
       </div>
-    </div>`;
-  }).join('');
+    </div>
+  </div>`;
+}
+
+function renderBoard() {
+  if (!S.subs)     S.subs     = [];
+  if (!S.bounties) S.bounties = [];
+  const p = curP, xp = S[p]?.xp||0, bal = S[p]?.balance||0;
+  document.getElementById('bpts').textContent   = xp.toLocaleString() + ' XP';
+  document.getElementById('bmoney').textContent = bal.toLocaleString() + ' pts';
+
+  const grid = document.getElementById('bounty-grid');
+  const compGrid = document.getElementById('completed-grid');
+  const compSection = document.getElementById('completed-section');
+
+  const list = S.bounties.filter(b => b.player === p && b.active);
+
+  const activeCards   = [];
+  const completedCards = [];
+
+  list.forEach(b => {
+    const sub  = S.subs.find(s => s.bountyId === b.id && s.player === p);
+    const done = sub && sub.status === 'approved';
+    const pend = sub && sub.status === 'pending';
+    const can  = !done && !pend;
+
+    // Check deadline expiry — remove expired tasks that haven't been started
+    if (b.deadline && b.postedAt && can) {
+      const expiry = new Date(b.postedAt).getTime() + b.deadline * 60 * 60 * 1000;
+      if (Date.now() > expiry) {
+        // Expired — remove from board silently
+        S.bounties = S.bounties.filter(x => x.id !== b.id);
+        save();
+        return;
+      }
+    }
+
+    if (done) {
+      completedCards.push(makeBountyCard(b, p, 'done', 'COMPLETE', false));
+    } else {
+      const cls = pend ? 'pend' : '';
+      const rib = pend ? 'PENDING' : '';
+      activeCards.push(makeBountyCard(b, p, cls, rib, can));
+    }
+  });
+
+  if (!activeCards.length) {
+    grid.innerHTML = `<div class="empty-st"><div class="empty-ico">📜</div><div class="empty-txt">No quests on the board — check back soon!</div></div>`;
+  } else {
+    grid.innerHTML = activeCards.join('');
+  }
+
+  if (completedCards.length) {
+    compSection.style.display = 'block';
+    const label = document.getElementById('completed-label');
+    label.textContent = `✦ Completed Quests (${completedCards.length})`;
+    // Keep existing open/close state
+    if (compGrid.style.display !== 'none') {
+      compGrid.innerHTML = completedCards.join('');
+    }
+  } else {
+    compSection.style.display = 'none';
+  }
+}
+
+let completedOpen = false;
+function toggleCompleted() {
+  completedOpen = !completedOpen;
+  const grid = document.getElementById('completed-grid');
+  const chevron = document.getElementById('completed-chevron');
+  if (completedOpen) {
+    // Populate and show
+    const p = curP;
+    const list = S.bounties.filter(b => b.player === p && b.active);
+    const completedCards = list.map(b => {
+      const sub = S.subs.find(s => s.bountyId === b.id && s.player === p);
+      return sub && sub.status === 'approved' ? makeBountyCard(b, p, 'done', 'COMPLETE', false) : null;
+    }).filter(Boolean);
+    grid.innerHTML = completedCards.join('');
+    grid.style.display = 'grid';
+    chevron.textContent = '▲';
+  } else {
+    grid.style.display = 'none';
+    chevron.textContent = '▼';
+  }
 }
 
 function openClaim(id) {
@@ -1912,15 +2068,49 @@ function renderApprovals() {
 
 function approve(id) {
   const sub = S.subs.find(s=>s.id===id); if (!sub) return;
-  sub.status='approved';
   const xpOnly = sub.xpOnly || false;
-  S[sub.player].xp += sub.pts;
-  S[sub.player].pts = S[sub.player].xp; // keep pts in sync with xp for level system
-  if (!xpOnly) S[sub.player].balance += sub.pts;
-  S[sub.player].cleared += 1;
-  S.history.unshift({player:sub.player,title:sub.bountyTitle,pts:sub.pts,xpOnly,time:new Date().toISOString()});
-  save(); renderApprovals(); renderScores(); updateBadge(); updateHome();
-  showNotif(`✦ Approved! +${sub.pts} XP for ${sub.player}${xpOnly?' (XP only)':''}`);
+  const player = sub.player;
+  const pts = sub.pts;
+
+  // Use Firebase transaction for atomic score update — prevents race conditions
+  // where two devices have stale S and overwrite each other
+  if (typeof db !== 'undefined') {
+    const playerRef = db.ref('state/' + player);
+    playerRef.transaction(current => {
+      if (!current) current = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
+      current.xp = (current.xp || 0) + pts;
+      current.pts = current.xp;
+      if (!xpOnly) current.balance = (current.balance || 0) + pts;
+      current.cleared = (current.cleared || 0) + 1;
+      return current;
+    }, (err, committed) => {
+      if (err || !committed) {
+        showNotif('⚠️ Sync error — try again'); return;
+      }
+      // Score update committed — now update sub status and history
+      sub.status = 'approved';
+      S.history.unshift({player, title:sub.bountyTitle, pts, xpOnly, time:new Date().toISOString()});
+      // First-claim: remove this quest from the other player's board
+      const approvedBounty = S.bounties.find(x => x.id === sub.bountyId);
+      if (approvedBounty && approvedBounty.firstClaim) {
+        const other = player === 'fox' ? 'forest' : 'fox';
+        S.bounties = S.bounties.filter(b => !(b.firstClaim && b.title === approvedBounty.title && b.player === other));
+        S.subs     = S.subs.filter(s => !(s.bountyTitle === approvedBounty.title && s.player === other));
+      }
+      save(); renderApprovals(); renderScores(); updateBadge(); updateHome();
+      showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly?' (XP only)':''}`);
+    });
+  } else {
+    // Offline fallback — direct mutation
+    sub.status = 'approved';
+    S[player].xp = (S[player].xp||0) + pts;
+    S[player].pts = S[player].xp;
+    if (!xpOnly) S[player].balance = (S[player].balance||0) + pts;
+    S[player].cleared = (S[player].cleared||0) + 1;
+    S.history.unshift({player, title:sub.bountyTitle, pts, xpOnly, time:new Date().toISOString()});
+    save(); renderApprovals(); renderScores(); updateBadge(); updateHome();
+    showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly?' (XP only)':''}`);
+  }
 }
 
 function reject(id) {
@@ -1967,17 +2157,19 @@ function addBounty() {
   const emoji=document.getElementById('new-emoji').value.trim()||'⚔️';
   const saveLib=document.getElementById('save-to-lib').checked;
   const xpOnly=document.getElementById('new-xp-only').checked;
+  const firstClaim=document.getElementById('new-firstclaim').checked;
   if(!title){showNotif('Enter a quest title');return;}
   if(!desc){showNotif('Enter a description');return;}
-  (player==='both'?['fox','forest']:[player]).forEach(p=>S.bounties.push({id:'b'+Date.now()+'_'+p,player:p,title,desc,pts,diff,emoji,active:true,xpOnly}));
+  (player==='both'?['fox','forest']:[player]).forEach(p=>S.bounties.push({id:'b'+Date.now()+'_'+p,player:p,title,desc,pts,diff,emoji,active:true,xpOnly,firstClaim}));
   if(saveLib) {
     S.customTemplates = S.customTemplates||[];
-    S.customTemplates.push({id:'tc'+Date.now(),cat:'Custom',emoji,title,desc,pts,diff,xpOnly});
+    S.customTemplates.push({id:'tc'+Date.now(),cat:'Custom',emoji,title,desc,pts,diff,xpOnly,firstClaim});
   }
   save(); showNotif('⚔️ Quest posted!');
   ['new-title','new-desc','new-pts','new-emoji'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('save-to-lib').checked=false;
   document.getElementById('new-xp-only').checked=false;
+  document.getElementById('new-firstclaim').checked=false;
   switchTab('manage'); renderManage();
 }
 
@@ -2159,7 +2351,7 @@ function renderRecurring() {
       <div class="recur-emoji">${r.emoji||'⏰'}</div>
       <div class="recur-info">
         <div class="recur-name">${r.title}</div>
-        <div class="recur-meta">${r.player==='both'?'Both heroes':r.player} · ${r.pts} pts · ${r.diff}</div>
+        <div class="recur-meta">${r.player==='both'?'Both heroes':r.player} · ${r.pts} pts · ${r.diff}${r.deadline?` · ⏳ ${r.deadline}h limit`:''}${r.firstClaim?' · ⚡ first wins':''}</div>
         <div class="recur-schedule">${r.freq==='weekly'?`<span class="day-chip on">Weekly — ${DAY_NAMES[r.days[0]]}</span>`:dayChips}</div>
         <div class="recur-next-badge">${r.paused?'⏸ Paused':'⏭ '+nextStr}</div>
       </div>
@@ -2238,14 +2430,17 @@ function saveRecurring() {
   const pts=parseInt(document.getElementById('rc-pts').value)||80;
   const diff=document.getElementById('rc-diff').value;
   const emoji=document.getElementById('rc-emoji').value.trim()||'⏰';
+  const deadline=parseInt(document.getElementById('rc-deadline').value)||24;
+  const firstClaim=document.getElementById('rc-firstclaim').checked;
   const days=[...document.querySelectorAll('.day-toggle.sel')].map(b=>parseInt(b.dataset.day));
   if(!title){showNotif('Enter a title');return;}
   if(!days.length){showNotif('Select at least one day');return;}
   S.recurring=S.recurring||[];
-  S.recurring.push({id:'r'+Date.now(),player,title,desc,pts,diff,emoji,freq:curFreq,days,paused:false,lastPosted:null});
+  S.recurring.push({id:'r'+Date.now(),player,title,desc,pts,diff,emoji,freq:curFreq,days,deadline,firstClaim,paused:false,lastPosted:null});
   save(); closeRecurForm();
-  // Clear form
   ['rc-title','rc-desc','rc-pts','rc-emoji'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('rc-deadline').value='24';
+  document.getElementById('rc-firstclaim').checked=false;
   renderRecurring();
   showNotif('⏰ Recurring quest saved!');
 }
@@ -2272,7 +2467,7 @@ function processRecurring() {
         S.subs = S.subs.filter(s=>!(s.recurringId===r.id && s.player===p));
         // Remove old bounty instance
         S.bounties = S.bounties.filter(b=>!(b.recurringId===r.id && b.player===p));
-        S.bounties.push({id:'b'+Date.now()+'_'+p+'_r',player:p,title:r.title,desc:r.desc,pts:r.pts,diff:r.diff,emoji:r.emoji,active:true,recurringId:r.id});
+        S.bounties.push({id:'b'+Date.now()+'_'+p+'_r', player:p, title:r.title, desc:r.desc, pts:r.pts, diff:r.diff, emoji:r.emoji, active:true, recurringId:r.id, deadline:r.deadline||null, firstClaim:r.firstClaim||false, postedAt:new Date().toISOString()});
         anyPosted=true;
       }
     });
@@ -2318,6 +2513,44 @@ function resetScores(who) {
   if(who==='all'){S.subs=[];S.history=[];}
   else{S.subs=S.subs.filter(s=>s.player!==who||s.status!=='approved');S.history=S.history.filter(h=>h.player!==who);}
   save();renderScores();updateHome();showNotif('Scores reset');
+}
+
+function applyOverride() {
+  const player = document.getElementById('ov-player').value;
+  const field  = document.getElementById('ov-field').value;
+  const op     = document.getElementById('ov-op').value;
+  const amount = parseInt(document.getElementById('ov-amount').value);
+  if (isNaN(amount) || amount < 0) { showNotif('Enter a valid amount'); return; }
+
+  const fieldLabel = field === 'xp' ? 'XP' : 'Points';
+  const opLabel = op === 'add' ? `+${amount}` : op === 'sub' ? `-${amount}` : `= ${amount}`;
+  if (!confirm(`Set ${player}'s ${fieldLabel} ${opLabel}?\nThis directly corrects the database.`)) return;
+
+  if (typeof db !== 'undefined') {
+    const playerRef = db.ref('state/' + player);
+    playerRef.transaction(current => {
+      if (!current) current = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
+      const cur = current[field] || 0;
+      const next = op === 'add' ? cur + amount : op === 'sub' ? Math.max(0, cur - amount) : amount;
+      current[field] = next;
+      if (field === 'xp') current.pts = next; // keep pts in sync
+      return current;
+    }, (err, committed) => {
+      if (err || !committed) { showNotif('⚠️ Override failed — check connection'); return; }
+      document.getElementById('ov-amount').value = '';
+      showNotif(`✦ Override applied to ${player}'s ${fieldLabel}`);
+      renderScores(); updateHome();
+    });
+  } else {
+    // Offline fallback
+    const cur = S[player][field] || 0;
+    const next = op === 'add' ? cur + amount : op === 'sub' ? Math.max(0, cur - amount) : amount;
+    S[player][field] = next;
+    if (field === 'xp') S[player].pts = next;
+    save(); renderScores(); updateHome();
+    document.getElementById('ov-amount').value = '';
+    showNotif(`✦ Override applied to ${player}'s ${fieldLabel}`);
+  }
 }
 
 function showNotif(msg) {
