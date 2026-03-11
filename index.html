@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>HERO BOUNTY BOARD</title>
+<title>CHORE BOUNTY BOARD</title>
 
 <!-- PWA: Makes "Add to Home Screen" open as full-screen app with no browser chrome -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#0a0d1a">
 
 <!-- PWA manifest (inline so no extra file needed) -->
-<link rel="manifest" href="data:application/json,{%22name%22:%22Hero%20Bounty%20Board%22,%22short_name%22:%22Bounty%20Board%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0d1a%22,%22theme_color%22:%22%230a0d1a%22,%22orientation%22:%22portrait%22}">
+<link rel="manifest" href="data:application/json,{%22name%22:%22Chore%20Bounty%20Board%22,%22short_name%22:%22Bounty%20Board%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0d1a%22,%22theme_color%22:%22%230a0d1a%22,%22orientation%22:%22portrait%22}">
 
 <!-- App icon for home screen (gold shield emoji rendered to canvas) -->
 <script>
@@ -1145,7 +1145,7 @@ body::before {
 <div id="home" class="screen active">
   <div class="hero-banner">
     <span class="hero-crest">⚔️</span>
-    <div class="hero-title">Hero Bounty Board</div>
+    <div class="hero-title">Chore Bounty Board</div>
     <div class="hero-divider"><div class="hdl"></div><div class="hdg">✦</div><div class="hdl"></div></div>
     <div class="hero-sub">Choose Your Hero · Complete Quests · Earn Glory</div>
   </div>
@@ -1686,12 +1686,12 @@ body::before {
   <!-- Loading overlay -->
   <div id="loading-overlay" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
     <div style="font-size:48px;animation:floatCrest 2s ease-in-out infinite;">⚔️</div>
-    <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--gold-bright);">Hero Bounty Board</div>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--gold-bright);">Chore Bounty Board</div>
     <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase;" id="loading-msg">Connecting to the realm...</div>
   </div>
 
 <div class="notif" id="notif"></div>
-<div class="version-tag">v20</div>
+<div class="version-tag">v21</div>
 
 <script>
 // ============================================================
@@ -2244,8 +2244,11 @@ function approve(id) {
   const player = sub.player;
   const pts = sub.pts;
 
-  // Use Firebase transaction for atomic score update — prevents race conditions
-  // where two devices have stale S and overwrite each other
+  // Block the Firebase listener immediately so the transaction echo doesn't overwrite S
+  isSaving = true;
+  clearTimeout(saveTimeout);
+
+  // Use Firebase transaction for atomic score update
   if (typeof db !== 'undefined') {
     const playerRef = db.ref('state/' + player);
     playerRef.transaction(current => {
@@ -2257,10 +2260,15 @@ function approve(id) {
       return current;
     }, (err, committed) => {
       if (err || !committed) {
+        isSaving = false;
         showNotif('⚠️ Sync error — try again'); return;
       }
-      // Score update committed — now update sub status and history
+      // Score committed — update S locally, mark approved, save full state
       sub.status = 'approved';
+      S[player].xp = (S[player].xp||0) + pts;
+      S[player].pts = S[player].xp;
+      if (!xpOnly) S[player].balance = (S[player].balance||0) + pts;
+      S[player].cleared = (S[player].cleared||0) + 1;
       S.history.unshift({player, title:sub.bountyTitle, pts, xpOnly, time:new Date().toISOString()});
       // First-claim: remove this quest from the other player's board
       const approvedBounty = S.bounties.find(x => x.id === sub.bountyId);
@@ -2280,6 +2288,7 @@ function approve(id) {
     if (!xpOnly) S[player].balance = (S[player].balance||0) + pts;
     S[player].cleared = (S[player].cleared||0) + 1;
     S.history.unshift({player, title:sub.bountyTitle, pts, xpOnly, time:new Date().toISOString()});
+    isSaving = false;
     save(); renderApprovals(); renderScores(); updateBadge(); updateHome();
     showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly?' (XP only)':''}`);
   }
