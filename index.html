@@ -387,6 +387,17 @@ body::before {
 .bc-countdown.ok   { background: rgba(58,170,53,0.15); color: var(--fox-bright); border: 1px solid var(--fox-dark); }
 .bc-countdown.warn { background: rgba(232,130,12,0.15); color: var(--forest-bright); border: 1px solid var(--forest-dark); }
 .bc-countdown.expired { background: rgba(180,40,40,0.15); color: #ff6b6b; border: 1px solid #7a1a1a; }
+/* Sync indicator — shown briefly when force-refreshing on app return */
+#sync-indicator {
+  position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(10,13,26,0.92); border: 1px solid var(--gold-dim);
+  padding: 5px 16px; font-family: 'Cinzel', serif; font-size: 9px;
+  letter-spacing: 3px; color: var(--gold); z-index: 9999;
+  opacity: 0; transition: opacity 0.25s; pointer-events: none;
+  text-transform: uppercase; white-space: nowrap;
+}
+#sync-indicator.show { opacity: 1; }
+
 /* First-claim badge */
 .bc-firstclaim {
   font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px;
@@ -1690,8 +1701,9 @@ body::before {
     <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase;" id="loading-msg">Connecting to the realm...</div>
   </div>
 
+<div id="sync-indicator">⟳ Syncing...</div>
 <div class="notif" id="notif"></div>
-<div class="version-tag">v21</div>
+<div class="version-tag">v22</div>
 
 <script>
 // ============================================================
@@ -1711,8 +1723,9 @@ const firebaseConfig = {
 // Firebase refs (set after init)
 let db = null;
 let stateRef = null;
-let saveTimeout = null;
-let isSaving = false; // guard: suppress listener re-sync during our own writes
+let lastWriteId = null;       // write-ID of our most recent save — listener skips our own echoes
+let recurringCheckedDate = null; // date string of last processRecurring run — one run per calendar day
+let loadingHidden = false;    // ensure hideLoading only registers intervals once
 
 // ============================================================
 //  STATE
@@ -1747,39 +1760,21 @@ function initFirebase() {
     db = firebase.database();
     stateRef = db.ref('state');
 
-    // Listen for real-time changes from any device
+    // Real-time listener — skips our own echoes via write-ID, always applies other devices' writes
     stateRef.on('value', snapshot => {
-      if (isSaving) return; // ignore echoes of our own writes
       const data = snapshot.val();
-      if (data) {
-        S = data;
-        if (!S.recurring)       S.recurring = [];
-        if (!S.customTemplates) S.customTemplates = [];
-        if (!S.pin)             S.pin = '1234';
-        if (!S.subs)            S.subs = [];
-        if (!S.bounties)        S.bounties = [];
-        if (!S.history)         S.history = [];
-        if (!S.hiddenBuiltins)  S.hiddenBuiltins = [];
-        PIN = S.pin;
-        // Migrate old data: if xp/balance missing, seed from pts
-        ['fox','forest'].forEach(p => {
-          if (!S[p]) S[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
-          if (S[p].xp === undefined)      S[p].xp      = S[p].pts || 0;
-          if (S[p].balance === undefined) S[p].balance  = S[p].pts || 0;
-        });
-      } else {
-        // First time — write defaults
+      if (!data) {
+        // First run — seed defaults
         S.bounties = DEFAULTS;
         S.pin = '1234';
         PIN = '1234';
         stateRef.set(S);
+        return;
       }
-      processRecurring();
-      restoreAvatars();
-      updateHome();
-      hideLoading();
+      // Skip if this is an echo of our own most-recent write
+      if (data._wid && data._wid === lastWriteId) return;
+      applySnapshot(data);
     }, err => {
-      // Firebase failed — fall back to localStorage
       console.warn('Firebase error, using localStorage:', err);
       document.getElementById('loading-msg').textContent = 'Offline — using local data';
       fallbackToLocal();
@@ -1787,11 +1782,24 @@ function initFirebase() {
 
     // Timeout: if Firebase hasn't responded in 6s, fall back
     setTimeout(() => {
-      if (document.getElementById('loading-overlay').style.display !== 'none') {
+      if (!loadingHidden) {
         document.getElementById('loading-msg').textContent = 'Slow connection — using local data';
         fallbackToLocal();
       }
     }, 6000);
+
+    // Visibility handler — force a fresh pull when the user returns to the app
+    // after the device was idle/backgrounded (WebSocket may have gone dormant)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && stateRef) {
+        showSyncing(true);
+        stateRef.once('value', snapshot => {
+          const data = snapshot.val();
+          if (data) applySnapshot(data); // always apply on return — bypass write-ID
+          showSyncing(false);
+        }, () => showSyncing(false));
+      }
+    });
 
   } catch(e) {
     console.warn('Firebase init failed:', e);
@@ -1801,28 +1809,19 @@ function initFirebase() {
 
 function fallbackToLocal() {
   const sv = localStorage.getItem('hbb_v2');
-  if (sv) { try { S = JSON.parse(sv); } catch(e) {} }
-  else { S.bounties = DEFAULTS; }
-  if (!S.recurring)       S.recurring = [];
-  if (!S.customTemplates) S.customTemplates = [];
-  if (!S.pin)             S.pin = '1234';
-  if (!S.subs)            S.subs = [];
-  if (!S.bounties)        S.bounties = [];
-  if (!S.history)         S.history = [];
-  if (!S.hiddenBuiltins)  S.hiddenBuiltins = [];
-  PIN = S.pin;
-  ['fox','forest'].forEach(p => {
-    if (!S[p]) S[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
-    if (S[p].xp === undefined)      S[p].xp      = S[p].pts || 0;
-    if (S[p].balance === undefined) S[p].balance  = S[p].pts || 0;
-  });
-  processRecurring();
-  restoreAvatars();
-  updateHome();
-  hideLoading();
+  let data = null;
+  if (sv) { try { data = JSON.parse(sv); } catch(e) {} }
+  if (data) {
+    applySnapshot(data);
+  } else {
+    S.bounties = DEFAULTS;
+    applySnapshot(S);
+  }
 }
 
 function hideLoading() {
+  if (loadingHidden) return; // only run once — prevents duplicate setIntervals
+  loadingHidden = true;
   const el = document.getElementById('loading-overlay');
   el.style.transition = 'opacity 0.4s';
   el.style.opacity = '0';
@@ -1836,24 +1835,62 @@ function hideLoading() {
   }, 60000);
 }
 
-// Debounced save — batches rapid changes into one write
+// ============================================================
+//  SHARED STATE APPLY — used by listener, once(), and fallback
+// ============================================================
+function applySnapshot(data) {
+  S = data;
+  if (!S.recurring)       S.recurring = [];
+  if (!S.customTemplates) S.customTemplates = [];
+  if (!S.pin)             S.pin = '1234';
+  if (!S.subs)            S.subs = [];
+  if (!S.bounties)        S.bounties = [];
+  if (!S.history)         S.history = [];
+  if (!S.hiddenBuiltins)  S.hiddenBuiltins = [];
+  PIN = S.pin;
+  // Migrate old data: seed xp/balance from pts if missing
+  ['fox','forest'].forEach(p => {
+    if (!S[p]) S[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
+    if (S[p].xp === undefined)      S[p].xp      = S[p].pts || 0;
+    if (S[p].balance === undefined) S[p].balance  = S[p].pts || 0;
+  });
+  restoreAvatars();
+  updateHome();
+  hideLoading();
+  maybeProcessRecurring();
+  // Re-render whichever screen is currently visible so it reflects new data immediately
+  if (document.getElementById('board')?.classList.contains('active')) renderBoard();
+  if (document.getElementById('admin')?.classList.contains('active')) renderAdmin();
+}
+
+function maybeProcessRecurring() {
+  const todayStr = new Date().toDateString();
+  if (recurringCheckedDate === todayStr) return; // already ran today on this device
+  recurringCheckedDate = todayStr;
+  processRecurring();
+}
+
+function showSyncing(on) {
+  const el = document.getElementById('sync-indicator');
+  if (el) el.classList.toggle('show', on);
+}
+
+// Write state to Firebase + localStorage. Stamps a unique write-ID so the
+// listener can distinguish our own echo from another device's update.
 function save() {
-  isSaving = true;
-  clearTimeout(saveTimeout);
-  // Save to Firebase (full data including photos)
-  if (typeof db !== 'undefined') {
+  const wid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  lastWriteId = wid;
+  S._wid = wid;
+
+  if (db) {
     try { db.ref('state').set(S); } catch(e) { console.warn('Firebase save failed:', e); }
   }
-  // Mirror to localStorage as offline backup — strip photos to avoid quota exceeded
+  // localStorage backup — strip photos to stay under quota
   try {
     const slim = JSON.parse(JSON.stringify(S));
     if (slim.subs) slim.subs = slim.subs.map(s => ({...s, photo: ''}));
     localStorage.setItem('hbb_v2', JSON.stringify(slim));
-  } catch(e) {
-    console.warn('localStorage save failed:', e);
-  }
-  // Re-enable listener after 2s (enough for Firebase round-trip)
-  saveTimeout = setTimeout(() => { isSaving = false; }, 2000);
+  } catch(e) { console.warn('localStorage save failed:', e); }
 }
 
 function init() {
@@ -2121,7 +2158,6 @@ function handleProof(input) {
 
 function submitBounty() {
   try {
-    // Read everything from DOM - survives Firebase re-init and iPad memory issues
     const photo = document.getElementById('cm-prev').getAttribute('data-photo');
     const bStr  = document.getElementById('cm-box').getAttribute('data-bounty');
     const player= document.getElementById('cm-box').getAttribute('data-player') || curP || 'fox';
@@ -2130,7 +2166,16 @@ function submitBounty() {
     const b = JSON.parse(bStr);
     if (!S.subs)    S.subs    = [];
     if (!S.bounties) S.bounties = [];
-    S.subs.push({ id:'sub_'+Date.now(), bountyId:b.id, bountyTitle:b.title, player:player, photo:photo, pts:b.pts, xpOnly:b.xpOnly||false, status:'pending', time:new Date().toISOString() });
+
+    // Guard: don't double-submit the same quest
+    const alreadyPending = S.subs.some(s => s.bountyId === b.id && s.player === player && s.status === 'pending');
+    if (alreadyPending) {
+      closeModal('claim-modal');
+      showNotif('⚡ Already submitted — awaiting approval!');
+      return;
+    }
+
+    S.subs.push({ id:'sub_'+Date.now(), bountyId:b.id, bountyTitle:b.title, player, photo, pts:b.pts, xpOnly:b.xpOnly||false, status:'pending', time:new Date().toISOString() });
     save();
     closeModal('claim-modal');
     renderBoard();
@@ -2239,59 +2284,32 @@ function renderApprovals() {
 }
 
 function approve(id) {
-  const sub = S.subs.find(s=>s.id===id); if (!sub) return;
+  const sub = S.subs.find(s => s.id === id); if (!sub) return;
   const xpOnly = sub.xpOnly || false;
   const player = sub.player;
-  const pts = sub.pts;
+  const pts    = sub.pts;
 
-  // Block the Firebase listener immediately so the transaction echo doesn't overwrite S
-  isSaving = true;
-  clearTimeout(saveTimeout);
+  // Apply everything locally in one shot, then do a single save().
+  // No Firebase transaction needed — only one parent approves at a time.
+  // A single save() produces one write-ID, one listener echo (suppressed), no race.
+  sub.status = 'approved';
+  S[player].xp      = (S[player].xp      || 0) + pts;
+  S[player].pts     = S[player].xp; // keep in sync
+  if (!xpOnly) S[player].balance = (S[player].balance || 0) + pts;
+  S[player].cleared = (S[player].cleared || 0) + 1;
+  S.history.unshift({ player, title: sub.bountyTitle, pts, xpOnly, time: new Date().toISOString() });
 
-  // Use Firebase transaction for atomic score update
-  if (typeof db !== 'undefined') {
-    const playerRef = db.ref('state/' + player);
-    playerRef.transaction(current => {
-      if (!current) current = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
-      current.xp = (current.xp || 0) + pts;
-      current.pts = current.xp;
-      if (!xpOnly) current.balance = (current.balance || 0) + pts;
-      current.cleared = (current.cleared || 0) + 1;
-      return current;
-    }, (err, committed) => {
-      if (err || !committed) {
-        isSaving = false;
-        showNotif('⚠️ Sync error — try again'); return;
-      }
-      // Score committed — update S locally, mark approved, save full state
-      sub.status = 'approved';
-      S[player].xp = (S[player].xp||0) + pts;
-      S[player].pts = S[player].xp;
-      if (!xpOnly) S[player].balance = (S[player].balance||0) + pts;
-      S[player].cleared = (S[player].cleared||0) + 1;
-      S.history.unshift({player, title:sub.bountyTitle, pts, xpOnly, time:new Date().toISOString()});
-      // First-claim: remove this quest from the other player's board
-      const approvedBounty = S.bounties.find(x => x.id === sub.bountyId);
-      if (approvedBounty && approvedBounty.firstClaim) {
-        const other = player === 'fox' ? 'forest' : 'fox';
-        S.bounties = S.bounties.filter(b => !(b.firstClaim && b.title === approvedBounty.title && b.player === other));
-        S.subs     = S.subs.filter(s => !(s.bountyTitle === approvedBounty.title && s.player === other));
-      }
-      save(); renderApprovals(); renderScores(); updateBadge(); updateHome();
-      showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly?' (XP only)':''}`);
-    });
-  } else {
-    // Offline fallback — direct mutation
-    sub.status = 'approved';
-    S[player].xp = (S[player].xp||0) + pts;
-    S[player].pts = S[player].xp;
-    if (!xpOnly) S[player].balance = (S[player].balance||0) + pts;
-    S[player].cleared = (S[player].cleared||0) + 1;
-    S.history.unshift({player, title:sub.bountyTitle, pts, xpOnly, time:new Date().toISOString()});
-    isSaving = false;
-    save(); renderApprovals(); renderScores(); updateBadge(); updateHome();
-    showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly?' (XP only)':''}`);
+  // First-claim: remove this quest from the other player's board
+  const approvedBounty = S.bounties.find(x => x.id === sub.bountyId);
+  if (approvedBounty && approvedBounty.firstClaim) {
+    const other = player === 'fox' ? 'forest' : 'fox';
+    S.bounties = S.bounties.filter(b => !(b.firstClaim && b.title === approvedBounty.title && b.player === other));
+    S.subs     = S.subs.filter(s => !(s.bountyTitle === approvedBounty.title && s.player === other));
   }
+
+  save();
+  renderApprovals(); renderScores(); updateBadge(); updateHome();
+  showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly ? ' (XP only)' : ''}`);
 }
 
 function reject(id) {
