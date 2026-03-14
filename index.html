@@ -1307,26 +1307,38 @@ body::before {
       <div id="hist-list"></div>
 
       <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);">
+        <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:6px;">🔄 Force Sync</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">Pull the latest data from the server — use if this device seems out of date.</div>
+        <button class="post-btn" style="background:rgba(14,165,233,0.12);border-color:#0ea5e9;color:#38bdf8;width:100%;" onclick="forceSync()">⟳ Force Sync Now</button>
+      </div>
+
+      <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);">
         <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:14px;">⚔️ Commander Override</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Manually correct XP or points if a sync error occurs.</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Manually correct scores if a sync error occurs. Leave any field blank to leave it unchanged.</div>
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
           <select id="ov-player" class="f-input" style="flex:1;min-width:90px;">
             <option value="fox">Fox</option>
             <option value="forest">Forest</option>
           </select>
-          <select id="ov-field" class="f-input" style="flex:1;min-width:90px;">
-            <option value="xp">XP (Rank)</option>
-            <option value="balance">Points (Wallet)</option>
-            <option value="cleared">Quests Cleared</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
           <select id="ov-op" class="f-input" style="flex:1;">
             <option value="add">Add</option>
             <option value="sub">Subtract</option>
             <option value="set">Set to exact</option>
           </select>
-          <input id="ov-amount" type="number" class="f-input" style="flex:1;" placeholder="Amount" min="0">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div>
+            <label class="form-lbl">XP (Rank)</label>
+            <input id="ov-xp" type="number" class="f-input" placeholder="blank = skip" min="0">
+          </div>
+          <div>
+            <label class="form-lbl">Points Wallet</label>
+            <input id="ov-balance" type="number" class="f-input" placeholder="blank = skip" min="0">
+          </div>
+          <div>
+            <label class="form-lbl">Quests Cleared</label>
+            <input id="ov-cleared" type="number" class="f-input" placeholder="blank = skip" min="0">
+          </div>
         </div>
         <button class="post-btn" style="background:var(--border2);color:var(--text);width:100%;" onclick="applyOverride()">⚔️ Apply Override</button>
       </div>
@@ -1703,7 +1715,7 @@ body::before {
 
 <div id="sync-indicator">⟳ Syncing...</div>
 <div class="notif" id="notif"></div>
-<div class="version-tag">v23</div>
+<div class="version-tag">v24</div>
 
 <script>
 // ============================================================
@@ -1723,6 +1735,7 @@ const firebaseConfig = {
 // Firebase refs (set after init)
 let db = null;
 let stateRef = null;
+let photosRef = null;         // separate path for proof photos — keeps state transactions lean
 let lastWriteId = null;       // write-ID of our most recent save — listener skips our own echoes
 let recurringCheckedDate = null; // date string of last processRecurring run — one run per calendar day
 let loadingHidden = false;    // ensure hideLoading only registers intervals once
@@ -1738,7 +1751,8 @@ let S = {
   forest: { pts:0, xp:0, balance:0, cleared:0, avatar:'' },
   bounties: [], subs: [], history: [],
   recurring: [], customTemplates: [],
-  pin: '1234'
+  pin: '1234',
+  photos: {}   // { subId: base64 } — populated by photosRef listener, never written to state node
 };
 let curP = 'fox', curBid = null, curPhoto = null;
 
@@ -1758,30 +1772,42 @@ function initFirebase() {
   try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
-    stateRef = db.ref('state');
+    stateRef  = db.ref('state');
+    photosRef = db.ref('photos'); // proof photos live here, NOT inside state
 
-    // Real-time listener — skips our own echoes via write-ID, always applies other devices' writes
+    // ── State listener ──────────────────────────────────────────
     stateRef.on('value', snapshot => {
       const data = snapshot.val();
       if (!data) {
         // First run — seed defaults
         S = normalizeState({});
         S.bounties = DEFAULTS;
-        S.pin = '1234';
-        PIN = '1234';
+        S.pin = '1234'; PIN = '1234';
         stateRef.set(S);
         return;
       }
-      // Skip if this is an echo of our own most-recent write
+      // Skip echoes of our own writes
       if (data._wid && data._wid === lastWriteId) return;
       applySnapshot(data);
     }, err => {
-      console.warn('Firebase error, using localStorage:', err);
+      console.warn('Firebase state error:', err);
       document.getElementById('loading-msg').textContent = 'Offline — using local data';
       fallbackToLocal();
     });
 
-    // Timeout: if Firebase hasn't responded in 6s, fall back
+    // ── Photos listener ─────────────────────────────────────────
+    // Fires whenever any proof photo is added. Keeps S.photos up to date
+    // on all devices without polluting the state transactions.
+    photosRef.on('value', snapshot => {
+      S.photos = snapshot.val() || {};
+      // If approvals tab is open, re-render so thumbnails appear
+      if (document.getElementById('admin')?.classList.contains('active')) {
+        const pending = (S.subs||[]).filter(s => s.status === 'pending');
+        if (pending.length) renderApprovals();
+      }
+    });
+
+    // ── Timeout fallback ────────────────────────────────────────
     setTimeout(() => {
       if (!loadingHidden) {
         document.getElementById('loading-msg').textContent = 'Slow connection — using local data';
@@ -1789,13 +1815,13 @@ function initFirebase() {
       }
     }, 6000);
 
-    // Visibility handler — force a fresh pull when the user returns to the app
-    // after the device was idle/backgrounded (WebSocket may have gone dormant)
+    // ── Visibility handler ──────────────────────────────────────
+    // Force a fresh pull when the user returns after device was idle/backgrounded.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && stateRef) {
         showSyncing(true);
-        stateRef.once('value', snapshot => {
-          const data = snapshot.val();
+        stateRef.once('value', snap => {
+          const data = snap.val();
           if (data) applySnapshot(data); // always apply on return — bypass write-ID
           showSyncing(false);
         }, () => showSyncing(false));
@@ -1806,6 +1832,24 @@ function initFirebase() {
     console.warn('Firebase init failed:', e);
     fallbackToLocal();
   }
+}
+
+// Force-pull latest state from Firebase — called by the Sync button in the portal
+function forceSync() {
+  if (!stateRef) { showNotif('Not connected to Firebase'); return; }
+  showSyncing(true);
+  Promise.all([
+    stateRef.once('value'),
+    photosRef ? photosRef.once('value') : Promise.resolve(null)
+  ]).then(([stateSnap, photosSnap]) => {
+    if (stateSnap.val()) applySnapshot(stateSnap.val());
+    if (photosSnap && photosSnap.val()) S.photos = photosSnap.val();
+    showSyncing(false);
+    showNotif('✦ Sync complete — data is up to date');
+  }).catch(() => {
+    showSyncing(false);
+    showNotif('⚠️ Sync failed — check connection');
+  });
 }
 
 function fallbackToLocal() {
@@ -1841,13 +1885,29 @@ function hideLoading() {
 //  SHARED STATE APPLY — used by listener, once(), and fallback
 // ============================================================
 function applySnapshot(data) {
-  S = normalizeState(JSON.parse(JSON.stringify(data))); // deep-copy then normalize
+  const existingPhotos = S.photos || {}; // preserve photos from photosRef listener
+  S = normalizeState(JSON.parse(JSON.stringify(data)));
+  S.photos = existingPhotos;
+
+  // Migration: if old data has inline photos in subs, move them out to S.photos
+  // and write to db.ref('photos') so other devices get them too
+  const toMigrate = {};
+  S.subs.forEach(sub => {
+    if (sub.photo && sub.photo.length > 100) { // real base64 data
+      S.photos[sub.id] = sub.photo;
+      toMigrate[sub.id] = sub.photo;
+      sub.photo = ''; // strip from sub going forward
+    }
+  });
+  if (Object.keys(toMigrate).length && photosRef) {
+    photosRef.update(toMigrate); // write photos to the photos path (non-blocking)
+  }
+
   PIN = S.pin;
   restoreAvatars();
   updateHome();
   hideLoading();
   maybeProcessRecurring();
-  // Re-render whichever screen is currently visible so it reflects new data immediately
   if (document.getElementById('board')?.classList.contains('active')) renderBoard();
   if (document.getElementById('admin')?.classList.contains('active')) renderAdmin();
 }
@@ -1872,22 +1932,22 @@ function generateWid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
-// localStorage-only save (no Firebase) — used when we've already written to Firebase
-// separately via a targeted transaction
+// localStorage-only save (no Firebase)
 function saveLocal() {
   try {
     const slim = JSON.parse(JSON.stringify(S));
     slim._wid = S._wid || '';
+    // Strip photos entirely — they live in db.ref('photos'), not state
     if (slim.subs) slim.subs = slim.subs.map(s => ({...s, photo: ''}));
+    delete slim.photos;
     localStorage.setItem('hbb_v2', JSON.stringify(slim));
   } catch(e) { console.warn('localStorage save failed:', e); }
 }
 
-// Normalize a raw Firebase state object — converts Firebase's object-arrays back to
-// real arrays and fills any missing fields with safe defaults.
+// Normalize a raw Firebase state object — converts Firebase's object-keyed arrays
+// back to real JS arrays and fills missing fields with safe defaults.
 function normalizeState(s) {
   if (!s) s = {};
-  // Firebase stores arrays as {0:x, 1:y} when there are gaps — convert back
   const toArr = v => v == null ? [] : Array.isArray(v) ? v : Object.values(v);
   s.subs           = toArr(s.subs);
   s.bounties       = toArr(s.bounties);
@@ -1895,6 +1955,8 @@ function normalizeState(s) {
   s.recurring      = toArr(s.recurring);
   s.customTemplates= toArr(s.customTemplates);
   s.hiddenBuiltins = toArr(s.hiddenBuiltins);
+  // photos is NOT stored in the state node — managed by photosRef listener
+  delete s.photos;
   if (!s.pin) s.pin = '1234';
   ['fox','forest'].forEach(p => {
     if (!s[p]) s[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
@@ -1904,37 +1966,44 @@ function normalizeState(s) {
   return s;
 }
 
-// Main save — uses a Firebase transaction so we NEVER overwrite another device's
-// concurrent writes. The transaction reads the current DB state and merges in any
-// subs or history entries the other device added that we don't have locally.
-// This is the fix for the core race condition.
+// Write state to Firebase + localStorage.
+// NEVER includes photos in the state node — photos live at db.ref('photos').
+// Uses a transaction to merge in any subs another device wrote between our
+// last applySnapshot and now (prevents overwriting concurrent submissions).
 function save() {
   const wid = generateWid();
   lastWriteId = wid;
   S._wid = wid;
 
   if (db) {
-    const localSnap = JSON.parse(JSON.stringify(S));
-    localSnap._wid = wid;
+    // Build the payload: deep copy, strip photos from subs, remove photos map
+    const payload = JSON.parse(JSON.stringify(S));
+    payload._wid = wid;
+    if (payload.subs) payload.subs = payload.subs.map(s => ({...s, photo: ''}));
+    delete payload.photos;
 
     db.ref('state').transaction(current => {
-      const merged = { ...localSnap };
-      if (current) {
-        current = normalizeState(current);
-        // Preserve any subs from DB that our local S doesn't know about.
-        // This prevents us overwriting a submission that arrived between our
-        // last applySnapshot and now.
-        const ourSubIds = new Set((localSnap.subs || []).map(s => s.id));
-        const extraSubs = current.subs.filter(s => !ourSubIds.has(s.id));
-        if (extraSubs.length) {
-          merged.subs = [...(localSnap.subs || []), ...extraSubs];
-          S.subs = merged.subs; // keep local S in sync with what we're committing
-        }
+      // If no current data, write our payload directly (first write or wiped DB)
+      if (!current) return payload;
+
+      current = normalizeState(current);
+      // Preserve any subs the DB has that we don't know about locally.
+      // This is the merge that prevents overwriting concurrent submissions.
+      const ourSubIds = new Set((payload.subs || []).map(s => s.id));
+      const extraSubs = current.subs.filter(s => !ourSubIds.has(s.id));
+      if (extraSubs.length) {
+        payload.subs = [...payload.subs, ...extraSubs];
+        // Also update local S so it stays in sync with what we're committing
+        extraSubs.forEach(sub => {
+          if (!S.subs.some(s => s.id === sub.id)) {
+            S.subs.push({...sub, photo: S.photos[sub.id] || ''});
+          }
+        });
       }
-      return merged;
-    }, (err, committed) => {
+      return payload; // always return a value — never abort
+    }, (err) => {
       if (err) console.warn('Save transaction failed:', err);
-    }, false /* don't apply locally — listener or applySnapshot handles that */);
+    }, false);
   }
 
   saveLocal();
@@ -2224,42 +2293,58 @@ function submitBounty() {
       return;
     }
 
+    const subId  = 'sub_' + Date.now();
+    // Sub stored in state WITHOUT photo — photo lives at db.ref('photos/{subId}')
     const newSub = {
-      id: 'sub_' + Date.now(),
-      bountyId: b.id, bountyTitle: b.title,
-      player, photo, pts: b.pts, xpOnly: b.xpOnly || false,
-      status: 'pending', time: new Date().toISOString()
+      id: subId, bountyId: b.id, bountyTitle: b.title,
+      player, pts: b.pts, xpOnly: b.xpOnly || false,
+      status: 'pending', time: new Date().toISOString(),
+      photo: '' // always empty in state
     };
 
-    // Optimistically update local state for instant UI feedback
-    S.subs.push(newSub);
+    // Optimistic local update — include photo in memory only for this device's display
+    if (!S.photos) S.photos = {};
+    S.photos[subId] = photo;
+    S.subs.push({...newSub, photo}); // keep photo in local S for immediate rendering
     closeModal('claim-modal');
     renderBoard();
     showNotif('⚡ Quest submitted — awaiting approval!');
     updateBadge();
-    saveLocal(); // save to localStorage immediately
+    saveLocal();
 
     if (db) {
-      // Use a transaction so this sub is APPENDED to whatever the DB currently has.
-      // This is safe even if the parent device is simultaneously saving — the
-      // transaction retries until it gets a clean write, and our sub always ends up in.
+      // Step 1: Write photo separately (non-blocking, no transaction needed)
+      photosRef.child(subId).set(photo).catch(e => console.warn('Photo write failed:', e));
+
+      // Step 2: Append sub (without photo) to state via transaction.
+      // CRITICAL: never return undefined from this function — that aborts the transaction.
       const wid = generateWid();
       db.ref('state').transaction(current => {
-        if (!current) return; // abort — state not initialized yet
+        // If no state yet, build from our local S (minus photos)
+        if (!current) {
+          const base = JSON.parse(JSON.stringify(S));
+          base.subs = base.subs.map(s => ({...s, photo: ''}));
+          delete base.photos;
+          base._wid = wid;
+          return base;
+        }
         current = normalizeState(current);
-        // If sub already there (transaction retry), abort cleanly
-        if (current.subs.some(s => s.id === newSub.id)) return;
-        current.subs.push(newSub);
+        // Idempotent: if sub already present (transaction retry), return current unchanged
+        if (current.subs.some(s => s.id === subId)) {
+          return current; // return current (not undefined) so transaction commits harmlessly
+        }
+        current.subs.push(newSub); // newSub has photo: ''
         current._wid = wid;
         return current;
       }, (err, committed) => {
         if (err || !committed) {
-          showNotif('⚠️ Sync issue — please resubmit');
-          // Remove from local state since it didn't make it to the server
-          S.subs = S.subs.filter(s => s.id !== newSub.id);
+          showNotif('⚠️ Sync error — submission may not have saved. Please resubmit.');
+          // Remove from local state on confirmed failure
+          S.subs = S.subs.filter(s => s.id !== subId);
+          delete S.photos[subId];
           renderBoard(); updateBadge();
         } else {
-          lastWriteId = wid; // suppress the echo from this specific write
+          lastWriteId = wid;
         }
       }, false);
     }
@@ -2350,9 +2435,13 @@ function renderApprovals() {
   const el = document.getElementById('approvals-list');
   const list = S.subs.filter(s=>s.status==='pending');
   if (!list.length) { el.innerHTML = `<div class="empty-st"><div class="empty-ico">✅</div><div class="empty-txt">No pending quests</div></div>`; return; }
-  el.innerHTML = list.map(s => `
-    <div class="pend-card">
-      <img class="pend-thumb" src="${s.photo}" onclick="viewPhoto('${s.id}')">
+  el.innerHTML = list.map(s => {
+    const photoSrc = S.photos[s.id] || s.photo || '';
+    const thumbHtml = photoSrc
+      ? `<img class="pend-thumb" src="${photoSrc}" onclick="viewPhoto('${s.id}')">`
+      : `<div class="pend-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--panel2);font-size:20px;">📷</div>`;
+    return `<div class="pend-card">
+      ${thumbHtml}
       <div class="pend-info">
         <div class="pend-meta"><span class="p-tag ${s.player}-tag">${s.player}</span><span class="p-name">${s.bountyTitle}</span></div>
         <div class="p-pts">✦ ${s.pts} XP${s.xpOnly ? ' ⚡ (XP only)' : ' + ' + s.pts + ' pts'}</div>
@@ -2362,13 +2451,13 @@ function renderApprovals() {
           <button class="rej-btn" onclick="reject('${s.id}')">✕ Reject</button>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function approve(id) {
-  // Find sub in local state for display/fallback
   const localSub = S.subs.find(s => s.id === id);
-  if (!localSub) { showNotif('⚠️ Submission not found'); return; }
+  if (!localSub) { showNotif('⚠️ Submission not found — try Force Sync'); return; }
   const { player, pts, xpOnly } = localSub;
 
   if (!db) {
@@ -2378,24 +2467,33 @@ function approve(id) {
     S[player].pts     = S[player].xp;
     if (!xpOnly) S[player].balance = (S[player].balance || 0) + pts;
     S[player].cleared = (S[player].cleared || 0) + 1;
-    S.history.unshift({ player, title:localSub.bountyTitle, pts, xpOnly, time:new Date().toISOString() });
+    S.history.unshift({ player, title: localSub.bountyTitle, pts, xpOnly, time: new Date().toISOString() });
     save();
     renderApprovals(); renderScores(); updateBadge(); updateHome();
     showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly ? ' (XP only)' : ''}`);
     return;
   }
 
-  // Use a full-state transaction so the approval is committed atomically against
-  // whatever is currently in the database — including any subs Fox submitted while
-  // we were offline or looking at a stale view.
+  let wasAlreadyApproved = false;
   const wid = generateWid();
-  db.ref('state').transaction(current => {
-    if (!current) return; // abort — no state
-    current = normalizeState(current);
 
+  db.ref('state').transaction(current => {
+    // Never return undefined — always return a value or null to abort intentionally
+    if (!current) return null; // null = "delete" in Firebase, but here = abort without error
+
+    current = normalizeState(current);
     const sub = current.subs.find(s => s.id === id);
-    if (!sub) return; // not in DB — abort (may have been deleted)
-    if (sub.status === 'approved') return; // already approved — abort (idempotent)
+
+    if (!sub) {
+      // Sub not in DB — this device's state is stale. Return current unchanged.
+      // The caller will get committed: false and we can tell them to force sync.
+      wasAlreadyApproved = false;
+      return; // undefined = abort (intentional — nothing to approve)
+    }
+    if (sub.status === 'approved') {
+      wasAlreadyApproved = true;
+      return; // undefined = abort — already done, no write needed
+    }
 
     sub.status = 'approved';
     if (!current[player]) current[player] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
@@ -2413,17 +2511,21 @@ function approve(id) {
     if (approvedBounty && approvedBounty.firstClaim) {
       const other = player === 'fox' ? 'forest' : 'fox';
       current.bounties = current.bounties.filter(b => !(b.firstClaim && b.title === approvedBounty.title && b.player === other));
-      current.subs     = current.subs.filter(s => !(s.bountyTitle === approvedBounty.title && s.player === other && s.status !== 'approved'));
+      current.subs = current.subs.filter(s => !(s.bountyTitle === approvedBounty.title && s.player === other && s.status !== 'approved'));
     }
 
     current._wid = wid;
-    return current;
+    return current; // commit
   }, (err, committed, snap) => {
-    if (err || !committed) {
-      showNotif('⚠️ Approval failed — please try again');
+    if (wasAlreadyApproved) {
+      showNotif('Already approved — syncing...');
+      if (snap && snap.val()) applySnapshot(snap.val());
       return;
     }
-    // Apply the authoritative committed state to our local S
+    if (err || !committed) {
+      showNotif('⚠️ Approval failed — use Force Sync then try again');
+      return;
+    }
     lastWriteId = wid;
     const data = snap.val();
     if (data) {
@@ -2440,8 +2542,9 @@ function reject(id) {
 }
 
 function viewPhoto(id) {
-  const sub = S.subs.find(s=>s.id===id); if (!sub) return;
-  document.getElementById('pv-img').src = sub.photo;
+  const photoSrc = (S.photos && S.photos[id]) || (S.subs.find(s=>s.id===id)||{}).photo || '';
+  if (!photoSrc) { showNotif('Photo not available'); return; }
+  document.getElementById('pv-img').src = photoSrc;
   document.getElementById('photo-view-modal').classList.add('active');
 }
 
@@ -3051,39 +3154,61 @@ function resetScores(who) {
 
 function applyOverride() {
   const player = document.getElementById('ov-player').value;
-  const field  = document.getElementById('ov-field').value;
   const op     = document.getElementById('ov-op').value;
-  const amount = parseInt(document.getElementById('ov-amount').value);
-  if (isNaN(amount) || amount < 0) { showNotif('Enter a valid amount'); return; }
 
-  const fieldLabel = field === 'xp' ? 'XP' : field === 'cleared' ? 'Quests Cleared' : 'Points';
-  const opLabel = op === 'add' ? `+${amount}` : op === 'sub' ? `-${amount}` : `= ${amount}`;
-  if (!confirm(`Set ${player}'s ${fieldLabel} ${opLabel}?\nThis directly corrects the database.`)) return;
+  const fields = [
+    { key: 'xp',      label: 'XP',             el: 'ov-xp'      },
+    { key: 'balance', label: 'Points Wallet',   el: 'ov-balance' },
+    { key: 'cleared', label: 'Quests Cleared',  el: 'ov-cleared' },
+  ];
 
-  if (typeof db !== 'undefined') {
-    const playerRef = db.ref('state/' + player);
-    playerRef.transaction(current => {
+  const changes = fields
+    .map(f => ({ ...f, val: document.getElementById(f.el).value }))
+    .filter(f => f.val !== '' && f.val !== null);
+
+  if (!changes.length) { showNotif('Enter at least one value'); return; }
+
+  const summary = changes.map(f => {
+    const n = parseInt(f.val);
+    const opLabel = op === 'add' ? `+${n}` : op === 'sub' ? `-${n}` : `= ${n}`;
+    return `${f.label} ${opLabel}`;
+  }).join(', ');
+
+  if (!confirm(`Update ${player}: ${summary}?\nThis directly corrects the database.`)) return;
+
+  const applyOp = (cur, n) =>
+    op === 'add' ? (cur||0) + n : op === 'sub' ? Math.max(0, (cur||0) - n) : n;
+
+  if (db) {
+    db.ref('state/' + player).transaction(current => {
       if (!current) current = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
-      const cur = current[field] || 0;
-      const next = op === 'add' ? cur + amount : op === 'sub' ? Math.max(0, cur - amount) : amount;
-      current[field] = next;
-      if (field === 'xp') current.pts = next; // keep pts in sync
+      changes.forEach(f => {
+        const n = parseInt(f.val);
+        current[f.key] = applyOp(current[f.key], n);
+        if (f.key === 'xp') current.pts = current.xp; // keep pts in sync
+      });
       return current;
     }, (err, committed) => {
       if (err || !committed) { showNotif('⚠️ Override failed — check connection'); return; }
-      document.getElementById('ov-amount').value = '';
-      showNotif(`✦ Override applied to ${player}'s ${fieldLabel}`);
+      changes.forEach(f => document.getElementById(f.el).value = '');
+      showNotif(`✦ Override applied to ${player}`);
+      // Also update local S to reflect the change immediately
+      if (!S[player]) S[player] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
+      changes.forEach(f => {
+        S[player][f.key] = applyOp(S[player][f.key], parseInt(f.val));
+        if (f.key === 'xp') S[player].pts = S[player].xp;
+      });
       renderScores(); updateHome();
     });
   } else {
-    // Offline fallback
-    const cur = S[player][field] || 0;
-    const next = op === 'add' ? cur + amount : op === 'sub' ? Math.max(0, cur - amount) : amount;
-    S[player][field] = next;
-    if (field === 'xp') S[player].pts = next;
+    changes.forEach(f => {
+      const n = parseInt(f.val);
+      S[player][f.key] = applyOp(S[player][f.key], n);
+      if (f.key === 'xp') S[player].pts = S[player].xp;
+    });
     save(); renderScores(); updateHome();
-    document.getElementById('ov-amount').value = '';
-    showNotif(`✦ Override applied to ${player}'s ${fieldLabel}`);
+    changes.forEach(f => document.getElementById(f.el).value = '');
+    showNotif(`✦ Override applied to ${player}`);
   }
 }
 
