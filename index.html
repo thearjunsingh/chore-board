@@ -1703,7 +1703,7 @@ body::before {
 
 <div id="sync-indicator">⟳ Syncing...</div>
 <div class="notif" id="notif"></div>
-<div class="version-tag">v22</div>
+<div class="version-tag">v23</div>
 
 <script>
 // ============================================================
@@ -1765,6 +1765,7 @@ function initFirebase() {
       const data = snapshot.val();
       if (!data) {
         // First run — seed defaults
+        S = normalizeState({});
         S.bounties = DEFAULTS;
         S.pin = '1234';
         PIN = '1234';
@@ -1814,6 +1815,7 @@ function fallbackToLocal() {
   if (data) {
     applySnapshot(data);
   } else {
+    S = normalizeState({});
     S.bounties = DEFAULTS;
     applySnapshot(S);
   }
@@ -1839,21 +1841,8 @@ function hideLoading() {
 //  SHARED STATE APPLY — used by listener, once(), and fallback
 // ============================================================
 function applySnapshot(data) {
-  S = data;
-  if (!S.recurring)       S.recurring = [];
-  if (!S.customTemplates) S.customTemplates = [];
-  if (!S.pin)             S.pin = '1234';
-  if (!S.subs)            S.subs = [];
-  if (!S.bounties)        S.bounties = [];
-  if (!S.history)         S.history = [];
-  if (!S.hiddenBuiltins)  S.hiddenBuiltins = [];
+  S = normalizeState(JSON.parse(JSON.stringify(data))); // deep-copy then normalize
   PIN = S.pin;
-  // Migrate old data: seed xp/balance from pts if missing
-  ['fox','forest'].forEach(p => {
-    if (!S[p]) S[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
-    if (S[p].xp === undefined)      S[p].xp      = S[p].pts || 0;
-    if (S[p].balance === undefined) S[p].balance  = S[p].pts || 0;
-  });
   restoreAvatars();
   updateHome();
   hideLoading();
@@ -1875,22 +1864,80 @@ function showSyncing(on) {
   if (el) el.classList.toggle('show', on);
 }
 
-// Write state to Firebase + localStorage. Stamps a unique write-ID so the
-// listener can distinguish our own echo from another device's update.
+// ============================================================
+//  SAVE HELPERS
+// ============================================================
+
+function generateWid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// localStorage-only save (no Firebase) — used when we've already written to Firebase
+// separately via a targeted transaction
+function saveLocal() {
+  try {
+    const slim = JSON.parse(JSON.stringify(S));
+    slim._wid = S._wid || '';
+    if (slim.subs) slim.subs = slim.subs.map(s => ({...s, photo: ''}));
+    localStorage.setItem('hbb_v2', JSON.stringify(slim));
+  } catch(e) { console.warn('localStorage save failed:', e); }
+}
+
+// Normalize a raw Firebase state object — converts Firebase's object-arrays back to
+// real arrays and fills any missing fields with safe defaults.
+function normalizeState(s) {
+  if (!s) s = {};
+  // Firebase stores arrays as {0:x, 1:y} when there are gaps — convert back
+  const toArr = v => v == null ? [] : Array.isArray(v) ? v : Object.values(v);
+  s.subs           = toArr(s.subs);
+  s.bounties       = toArr(s.bounties);
+  s.history        = toArr(s.history);
+  s.recurring      = toArr(s.recurring);
+  s.customTemplates= toArr(s.customTemplates);
+  s.hiddenBuiltins = toArr(s.hiddenBuiltins);
+  if (!s.pin) s.pin = '1234';
+  ['fox','forest'].forEach(p => {
+    if (!s[p]) s[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
+    if (s[p].xp      === undefined) s[p].xp      = s[p].pts || 0;
+    if (s[p].balance === undefined) s[p].balance  = s[p].pts || 0;
+  });
+  return s;
+}
+
+// Main save — uses a Firebase transaction so we NEVER overwrite another device's
+// concurrent writes. The transaction reads the current DB state and merges in any
+// subs or history entries the other device added that we don't have locally.
+// This is the fix for the core race condition.
 function save() {
-  const wid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const wid = generateWid();
   lastWriteId = wid;
   S._wid = wid;
 
   if (db) {
-    try { db.ref('state').set(S); } catch(e) { console.warn('Firebase save failed:', e); }
+    const localSnap = JSON.parse(JSON.stringify(S));
+    localSnap._wid = wid;
+
+    db.ref('state').transaction(current => {
+      const merged = { ...localSnap };
+      if (current) {
+        current = normalizeState(current);
+        // Preserve any subs from DB that our local S doesn't know about.
+        // This prevents us overwriting a submission that arrived between our
+        // last applySnapshot and now.
+        const ourSubIds = new Set((localSnap.subs || []).map(s => s.id));
+        const extraSubs = current.subs.filter(s => !ourSubIds.has(s.id));
+        if (extraSubs.length) {
+          merged.subs = [...(localSnap.subs || []), ...extraSubs];
+          S.subs = merged.subs; // keep local S in sync with what we're committing
+        }
+      }
+      return merged;
+    }, (err, committed) => {
+      if (err) console.warn('Save transaction failed:', err);
+    }, false /* don't apply locally — listener or applySnapshot handles that */);
   }
-  // localStorage backup — strip photos to stay under quota
-  try {
-    const slim = JSON.parse(JSON.stringify(S));
-    if (slim.subs) slim.subs = slim.subs.map(s => ({...s, photo: ''}));
-    localStorage.setItem('hbb_v2', JSON.stringify(slim));
-  } catch(e) { console.warn('localStorage save failed:', e); }
+
+  saveLocal();
 }
 
 function init() {
@@ -2051,9 +2098,11 @@ function renderBoard() {
     if (b.deadline && b.postedAt && can) {
       const expiry = new Date(b.postedAt).getTime() + b.deadline * 60 * 60 * 1000;
       if (Date.now() > expiry) {
-        // Expired — remove from board silently
+        // Expired — remove from local board silently. Do NOT call save() here:
+        // a background save from renderBoard would overwrite concurrent writes
+        // from other devices. The removal will be committed next time save() runs
+        // from a real user action.
         S.bounties = S.bounties.filter(x => x.id !== b.id);
-        save();
         return;
       }
     }
@@ -2164,7 +2213,7 @@ function submitBounty() {
     if (!photo) { alert('No photo data found. Please retake the photo.'); return; }
     if (!bStr)  { alert('Quest data missing. Please close and reopen the quest.'); return; }
     const b = JSON.parse(bStr);
-    if (!S.subs)    S.subs    = [];
+    if (!S.subs)     S.subs     = [];
     if (!S.bounties) S.bounties = [];
 
     // Guard: don't double-submit the same quest
@@ -2175,12 +2224,45 @@ function submitBounty() {
       return;
     }
 
-    S.subs.push({ id:'sub_'+Date.now(), bountyId:b.id, bountyTitle:b.title, player, photo, pts:b.pts, xpOnly:b.xpOnly||false, status:'pending', time:new Date().toISOString() });
-    save();
+    const newSub = {
+      id: 'sub_' + Date.now(),
+      bountyId: b.id, bountyTitle: b.title,
+      player, photo, pts: b.pts, xpOnly: b.xpOnly || false,
+      status: 'pending', time: new Date().toISOString()
+    };
+
+    // Optimistically update local state for instant UI feedback
+    S.subs.push(newSub);
     closeModal('claim-modal');
     renderBoard();
     showNotif('⚡ Quest submitted — awaiting approval!');
     updateBadge();
+    saveLocal(); // save to localStorage immediately
+
+    if (db) {
+      // Use a transaction so this sub is APPENDED to whatever the DB currently has.
+      // This is safe even if the parent device is simultaneously saving — the
+      // transaction retries until it gets a clean write, and our sub always ends up in.
+      const wid = generateWid();
+      db.ref('state').transaction(current => {
+        if (!current) return; // abort — state not initialized yet
+        current = normalizeState(current);
+        // If sub already there (transaction retry), abort cleanly
+        if (current.subs.some(s => s.id === newSub.id)) return;
+        current.subs.push(newSub);
+        current._wid = wid;
+        return current;
+      }, (err, committed) => {
+        if (err || !committed) {
+          showNotif('⚠️ Sync issue — please resubmit');
+          // Remove from local state since it didn't make it to the server
+          S.subs = S.subs.filter(s => s.id !== newSub.id);
+          renderBoard(); updateBadge();
+        } else {
+          lastWriteId = wid; // suppress the echo from this specific write
+        }
+      }, false);
+    }
   } catch(err) {
     alert('Submit error: ' + err.message + '\nPlease screenshot this and report it.');
   }
@@ -2284,32 +2366,71 @@ function renderApprovals() {
 }
 
 function approve(id) {
-  const sub = S.subs.find(s => s.id === id); if (!sub) return;
-  const xpOnly = sub.xpOnly || false;
-  const player = sub.player;
-  const pts    = sub.pts;
+  // Find sub in local state for display/fallback
+  const localSub = S.subs.find(s => s.id === id);
+  if (!localSub) { showNotif('⚠️ Submission not found'); return; }
+  const { player, pts, xpOnly } = localSub;
 
-  // Apply everything locally in one shot, then do a single save().
-  // No Firebase transaction needed — only one parent approves at a time.
-  // A single save() produces one write-ID, one listener echo (suppressed), no race.
-  sub.status = 'approved';
-  S[player].xp      = (S[player].xp      || 0) + pts;
-  S[player].pts     = S[player].xp; // keep in sync
-  if (!xpOnly) S[player].balance = (S[player].balance || 0) + pts;
-  S[player].cleared = (S[player].cleared || 0) + 1;
-  S.history.unshift({ player, title: sub.bountyTitle, pts, xpOnly, time: new Date().toISOString() });
-
-  // First-claim: remove this quest from the other player's board
-  const approvedBounty = S.bounties.find(x => x.id === sub.bountyId);
-  if (approvedBounty && approvedBounty.firstClaim) {
-    const other = player === 'fox' ? 'forest' : 'fox';
-    S.bounties = S.bounties.filter(b => !(b.firstClaim && b.title === approvedBounty.title && b.player === other));
-    S.subs     = S.subs.filter(s => !(s.bountyTitle === approvedBounty.title && s.player === other));
+  if (!db) {
+    // Offline fallback — direct mutation
+    localSub.status = 'approved';
+    S[player].xp      = (S[player].xp      || 0) + pts;
+    S[player].pts     = S[player].xp;
+    if (!xpOnly) S[player].balance = (S[player].balance || 0) + pts;
+    S[player].cleared = (S[player].cleared || 0) + 1;
+    S.history.unshift({ player, title:localSub.bountyTitle, pts, xpOnly, time:new Date().toISOString() });
+    save();
+    renderApprovals(); renderScores(); updateBadge(); updateHome();
+    showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly ? ' (XP only)' : ''}`);
+    return;
   }
 
-  save();
-  renderApprovals(); renderScores(); updateBadge(); updateHome();
-  showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly ? ' (XP only)' : ''}`);
+  // Use a full-state transaction so the approval is committed atomically against
+  // whatever is currently in the database — including any subs Fox submitted while
+  // we were offline or looking at a stale view.
+  const wid = generateWid();
+  db.ref('state').transaction(current => {
+    if (!current) return; // abort — no state
+    current = normalizeState(current);
+
+    const sub = current.subs.find(s => s.id === id);
+    if (!sub) return; // not in DB — abort (may have been deleted)
+    if (sub.status === 'approved') return; // already approved — abort (idempotent)
+
+    sub.status = 'approved';
+    if (!current[player]) current[player] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
+    current[player].xp      = (current[player].xp      || 0) + pts;
+    current[player].pts     = current[player].xp;
+    if (!xpOnly) current[player].balance = (current[player].balance || 0) + pts;
+    current[player].cleared = (current[player].cleared || 0) + 1;
+    current.history = [
+      { player, title: sub.bountyTitle, pts, xpOnly, time: new Date().toISOString() },
+      ...(current.history || [])
+    ];
+
+    // First-claim: remove this quest from the other player's board
+    const approvedBounty = (current.bounties || []).find(x => x.id === sub.bountyId);
+    if (approvedBounty && approvedBounty.firstClaim) {
+      const other = player === 'fox' ? 'forest' : 'fox';
+      current.bounties = current.bounties.filter(b => !(b.firstClaim && b.title === approvedBounty.title && b.player === other));
+      current.subs     = current.subs.filter(s => !(s.bountyTitle === approvedBounty.title && s.player === other && s.status !== 'approved'));
+    }
+
+    current._wid = wid;
+    return current;
+  }, (err, committed, snap) => {
+    if (err || !committed) {
+      showNotif('⚠️ Approval failed — please try again');
+      return;
+    }
+    // Apply the authoritative committed state to our local S
+    lastWriteId = wid;
+    const data = snap.val();
+    if (data) {
+      applySnapshot(data);
+      showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly ? ' (XP only)' : ''}`);
+    }
+  }, false);
 }
 
 function reject(id) {
