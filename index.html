@@ -1723,7 +1723,7 @@ body::before {
 
 <div id="sync-indicator">⟳ Syncing...</div>
 <div class="notif" id="notif"></div>
-<div class="version-tag">v26</div>
+<div class="version-tag">v28</div>
 
 <script>
 // ============================================================
@@ -1742,11 +1742,11 @@ const firebaseConfig = {
 
 // Firebase refs (set after init)
 let db = null;
-let stateRef = null;
-let photosRef = null;         // separate path for proof photos — keeps state transactions lean
-let lastWriteId = null;       // write-ID of our most recent save — listener skips our own echoes
-let recurringCheckedDate = null; // date string of last processRecurring run — one run per calendar day
-let loadingHidden = false;    // ensure hideLoading only registers intervals once
+let stateRef  = null;
+let photosRef = null;  // proof photos — separate from state to keep transactions lean
+let lastWriteId = null;
+let recurringCheckedDate = null;
+let loadingHidden = false;
 
 // ============================================================
 //  STATE
@@ -1781,17 +1781,28 @@ function initFirebase() {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     stateRef  = db.ref('state');
-    photosRef = db.ref('photos'); // proof photos live here, NOT inside state
+    photosRef = db.ref('photos');
 
-    // ── State listener ──────────────────────────────────────────
+    // ── State listener ──────────────────────────────────────────────────────
     stateRef.on('value', snapshot => {
       const data = snapshot.val();
       if (!data) {
-        // First run — seed defaults
-        S = normalizeState({});
-        S.bounties = DEFAULTS;
-        S.pin = '1234'; PIN = '1234';
-        stateRef.set(S);
+        // Listener says no data. This could be a genuine empty DB, OR it could
+        // be a stale/reconnecting client whose local cache hasn't loaded yet.
+        // NEVER seed directly from this callback — always confirm with once() first.
+        stateRef.once('value').then(confirmedSnap => {
+          if (confirmedSnap.val()) {
+            // Real data exists — the listener fired prematurely. Apply it now.
+            applySnapshot(confirmedSnap.val());
+          } else {
+            // Confirmed truly empty — safe to seed defaults.
+            // Build a fresh object inline — never use the current S which may be dirty.
+            const freshSeed = normalizeState({});
+            freshSeed.bounties = DEFAULTS;
+            freshSeed.pin = '1234'; PIN = '1234';
+            stateRef.set(freshSeed);
+          }
+        }).catch(e => console.warn('State seed confirmation failed:', e));
         return;
       }
       // Skip echoes of our own writes
@@ -1803,19 +1814,15 @@ function initFirebase() {
       fallbackToLocal();
     });
 
-    // ── Photos listener ─────────────────────────────────────────
-    // Fires whenever any proof photo is added. Keeps S.photos up to date
-    // on all devices without polluting the state transactions.
+    // ── Photos listener ──
     photosRef.on('value', snapshot => {
       S.photos = snapshot.val() || {};
-      // If approvals tab is open, re-render so thumbnails appear
       if (document.getElementById('admin')?.classList.contains('active')) {
-        const pending = (S.subs||[]).filter(s => s.status === 'pending');
-        if (pending.length) renderApprovals();
+        if ((S.subs||[]).some(s => s.status === 'pending')) renderApprovals();
       }
     });
 
-    // ── Timeout fallback ────────────────────────────────────────
+    // ── Timeout fallback ──
     setTimeout(() => {
       if (!loadingHidden) {
         document.getElementById('loading-msg').textContent = 'Slow connection — using local data';
@@ -1823,16 +1830,19 @@ function initFirebase() {
       }
     }, 6000);
 
-    // ── Visibility handler ──────────────────────────────────────
+    // ── Visibility handler ──────────────────────────────────────────────────
     // Force a fresh pull when the user returns after device was idle/backgrounded.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && stateRef) {
         showSyncing(true);
-        stateRef.once('value', snap => {
-          const data = snap.val();
-          if (data) applySnapshot(data); // always apply on return — bypass write-ID
+        Promise.all([
+          stateRef.once('value'),
+          photosRef ? photosRef.once('value') : Promise.resolve(null)
+        ]).then(([stateSnap, photosSnap]) => {
+          if (stateSnap && stateSnap.val()) applySnapshot(stateSnap.val());
+          if (photosSnap && photosSnap.val()) S.photos = photosSnap.val();
           showSyncing(false);
-        }, () => showSyncing(false));
+        }).catch(() => showSyncing(false));
       }
     });
 
@@ -1842,7 +1852,7 @@ function initFirebase() {
   }
 }
 
-// Force-pull latest state from Firebase — called by the Sync button in the portal
+// Force-pull latest state and photos from Firebase
 function forceSync() {
   if (!stateRef) { showNotif('Not connected to Firebase'); return; }
   showSyncing(true);
@@ -2044,6 +2054,15 @@ function save() {
 }
 
 function init() {
+  // Safety guard — only connect to Firebase when running on the real production domain.
+  // Any preview, iframe, or local load will use localStorage fallback instead,
+  // preventing accidental writes to the live database.
+  const allowedHost = 'thearjunsingh.github.io';
+  if (window.location.hostname !== allowedHost) {
+    console.warn(`Firebase disabled — not on production host (${window.location.hostname}). Using localStorage.`);
+    fallbackToLocal();
+    return;
+  }
   initFirebase();
 }
 
@@ -2351,21 +2370,16 @@ function submitBounty() {
       photosRef.child(subId).set(photo).catch(e => console.warn('Photo write failed:', e));
 
       // Step 2: Append sub (without photo) to state via transaction.
-      // CRITICAL: never return undefined from this function — that aborts the transaction.
       const wid = generateWid();
       db.ref('state').transaction(current => {
-        // If no state yet, build from our local S (minus photos)
-        if (!current) {
-          const base = JSON.parse(JSON.stringify(S));
-          base.subs = base.subs.map(s => ({...s, photo: ''}));
-          delete base.photos;
-          base._wid = wid;
-          return base;
-        }
+        // If current is null, Firebase's local cache is cold (stale connection).
+        // Abort — do NOT write local S to the DB. Same rule as save() and approve().
+        if (!current) return; // undefined = abort, no write
+
         current = normalizeState(current);
-        // Idempotent: if sub already present (transaction retry), return current unchanged
+        // Idempotent: if sub already present (transaction retry), return unchanged
         if (current.subs.some(s => s.id === subId)) {
-          return current; // return current (not undefined) so transaction commits harmlessly
+          return current;
         }
         current.subs.push(newSub); // newSub has photo: ''
         current._wid = wid;
@@ -2373,7 +2387,6 @@ function submitBounty() {
       }, (err, committed) => {
         if (err || !committed) {
           showNotif('⚠️ Sync error — submission may not have saved. Please resubmit.');
-          // Remove from local state on confirmed failure
           S.subs = S.subs.filter(s => s.id !== subId);
           delete S.photos[subId];
           renderBoard(); updateBadge();
@@ -2512,8 +2525,10 @@ function approve(id) {
   const wid = generateWid();
 
   db.ref('state').transaction(current => {
-    // Never return undefined — always return a value or null to abort intentionally
-    if (!current) return null; // null = "delete" in Firebase, but here = abort without error
+    // If current is null, Firebase doesn't have this cached locally yet —
+    // stale connection. Return undefined to abort without writing anything.
+    // NEVER return null here — null tells Firebase to DELETE the node.
+    if (!current) return; // undefined = abort, no write, no delete
 
     current = normalizeState(current);
     const sub = current.subs.find(s => s.id === id);
