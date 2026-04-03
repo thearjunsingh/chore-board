@@ -55,6 +55,10 @@
   --gold-dim: #7A5C10;
   --red: #CC3020;
   --cream: #EAE0C8;
+  --dragon-primary: #8B1A1A;
+  --dragon-bright: #CC2222;
+  --dragon-glow: rgba(180,20,20,0.4);
+  --dragon-dark: #3D0A0A;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
@@ -309,6 +313,78 @@ body::before {
 }
 .portal-link:hover { color: var(--gold); border-color: var(--gold-dim); }
 
+/* ── Dark Dragon Threat Bar ─────────────────────────────────── */
+.dragon-threat {
+  margin: 0 16px 24px;
+  background: rgba(139,26,26,0.12);
+  border: 1px solid var(--dragon-primary);
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.dragon-threat::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(139,26,26,0.08) 0%, transparent 60%);
+}
+.dragon-threat-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.dragon-icon { font-size: 24px; animation: dragonPulse 3s ease-in-out infinite; }
+@keyframes dragonPulse {
+  0%,100% { transform: scale(1); filter: drop-shadow(0 0 4px var(--dragon-bright)); }
+  50%      { transform: scale(1.08); filter: drop-shadow(0 0 10px var(--dragon-bright)); }
+}
+.dragon-name {
+  font-family: 'Cinzel Decorative', serif; font-size: 13px;
+  color: var(--dragon-bright); letter-spacing: 2px;
+}
+.dragon-subtitle {
+  font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 3px;
+  text-transform: uppercase; color: #aa4444; margin-top: 1px;
+}
+.dragon-xp-label {
+  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; color: #aa4444; margin-bottom: 6px;
+  display: flex; justify-content: space-between;
+}
+.dragon-bar-wrap {
+  height: 10px; background: rgba(139,26,26,0.2);
+  border: 1px solid var(--dragon-primary); overflow: hidden;
+}
+.dragon-bar-fill {
+  height: 100%; background: linear-gradient(90deg, var(--dragon-dark), var(--dragon-bright));
+  transition: width 1s ease; box-shadow: 0 0 8px var(--dragon-glow);
+}
+.dragon-warning {
+  font-family: 'Crimson Pro', serif; font-style: italic;
+  font-size: 11px; color: #aa4444; margin-top: 8px; text-align: center;
+}
+
+/* Manage tab sections */
+.mgr-section-hdr {
+  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--text-dim);
+  border-bottom: 1px solid var(--border); padding-bottom: 6px; margin: 14px 0 8px;
+}
+.mgr-section-hdr.active-hdr { color: var(--gold-dim); }
+.mgr-section-hdr.scheduled-hdr { color: #38bdf866; }
+.snipe-btn {
+  background: rgba(139,26,26,0.2); border: 1px solid var(--dragon-primary);
+  color: var(--dragon-bright); font-family: 'Cinzel', serif;
+  font-size: 8px; letter-spacing: 1px; padding: 4px 8px; cursor: pointer;
+  text-transform: uppercase;
+}
+.snipe-btn:hover { background: rgba(139,26,26,0.4); }
+
+/* Dragon score in scores tab */
+.score-box.dragon {
+  border-color: var(--dragon-primary);
+  background: linear-gradient(135deg, rgba(139,26,26,0.15) 0%, rgba(10,12,20,0) 70%);
+  grid-column: 1 / -1;
+}
+.score-box.dragon .sb-name { color: var(--dragon-bright); }
+
 /* ===== BOARD ===== */
 #board { background: var(--bg); }
 
@@ -488,25 +564,13 @@ body::before {
 
 .cm-bname { font-family: 'Cinzel Decorative', serif; font-size: 18px; color: var(--cream); margin-bottom: 6px; }
 .cm-bdesc { font-size: 14px; color: var(--text-dim); font-style: italic; line-height: 1.6; margin-bottom: 18px; }
-.cm-section-lbl { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 4px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
-.cm-preview { width: 100%; max-height: 180px; object-fit: contain; display: none; margin-bottom: 12px; border: 1px solid var(--border2); }
-.cm-drop {
-  display: block;
-  border: 1px dashed var(--border2); padding: 26px 18px; text-align: center;
-  cursor: pointer; transition: all 0.2s; margin-bottom: 14px;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-.cm-drop:hover, .cm-drop.has-file { border-color: var(--gold-dim); background: rgba(200,160,48,0.03); }
+.cm-reward { text-align: center; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); margin-bottom: 14px; text-transform: uppercase; }
 .version-tag {
   position: fixed; bottom: 8px; right: 10px; z-index: 50;
   font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px;
   color: var(--text-dim); opacity: 0.4; pointer-events: none;
   text-transform: uppercase;
 }
-.cm-drop-icon { font-size: 28px; margin-bottom: 6px; }
-.cm-drop-text { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
-.cm-reward { text-align: center; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); margin-bottom: 14px; text-transform: uppercase; }
 .cm-submit {
   width: 100%; padding: 13px; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700;
   letter-spacing: 5px; text-transform: uppercase; border: none; cursor: pointer;
@@ -538,8 +602,7 @@ body::before {
 .tab-pane { display: none; }
 .tab-pane.active { display: block; }
 
-.pend-card { background: var(--panel2); border: 1px solid var(--border2); padding: 14px; margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start; }
-.pend-thumb { width: 70px; height: 70px; object-fit: cover; border: 1px solid var(--border2); flex-shrink: 0; cursor: pointer; }
+.pend-card { background: var(--panel2); border: 1px solid var(--border2); padding: 14px; margin-bottom: 12px; }
 .pend-info { flex: 1; min-width: 0; }
 .pend-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
 .p-tag { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 2px 8px; }
@@ -620,9 +683,6 @@ body::before {
 .lk-btn:hover { background: var(--gold-bright); }
 .lk-cancel { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); cursor: pointer; margin-top: 4px; transition: color 0.2s; }
 .lk-cancel:hover { color: var(--text); }
-
-#photo-view-modal .modal { max-width: 540px; }
-#photo-view-modal img { width: 100%; display: block; }
 
 /* Phone-friendly modal */
 @media (max-width: 639px) {
@@ -1098,8 +1158,7 @@ body::before {
   /* Bigger tap targets throughout admin on mobile */
   .app-btn, .rej-btn { padding: 10px 18px; font-size: 11px; }
   .tog-b, .del-b { padding: 6px 12px; font-size: 9px; }
-  .pend-card { padding: 12px; gap: 12px; }
-  .pend-thumb { width: 80px; height: 80px; }
+  .pend-card { padding: 12px; }
   .p-name { font-size: 14px; }
   .p-pts { font-size: 16px; }
 
@@ -1227,6 +1286,29 @@ body::before {
     </div>
   </div>
 
+  <!-- Dark Dragon Threat Bar -->
+  <div class="dragon-threat" id="dragon-threat-bar">
+    <div class="dragon-threat-header">
+      <span class="dragon-icon">🐉</span>
+      <div>
+        <div class="dragon-name">The Dark Dragon</div>
+        <div class="dragon-subtitle">Growing in power...</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;">
+        <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:var(--dragon-bright);" id="dragon-xp-home">0</div>
+        <div style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:#aa4444;">DARK XP</div>
+      </div>
+    </div>
+    <div class="dragon-xp-label">
+      <span>Threat Level</span>
+      <span id="dragon-threat-pct">0%</span>
+    </div>
+    <div class="dragon-bar-wrap">
+      <div class="dragon-bar-fill" id="dragon-bar" style="width:0%"></div>
+    </div>
+    <div class="dragon-warning" id="dragon-warning-text">The realm is at peace... for now.</div>
+  </div>
+
   <div class="portal-link" onclick="showLock()">🏰 Commander's Portal</div>
 </div>
 
@@ -1272,10 +1354,18 @@ body::before {
   <div class="admin-body">
     <div class="tab-pane active" id="pane-approvals"><div id="approvals-list"></div></div>
     <div class="tab-pane" id="pane-manage">
+      <!-- FOX -->
       <div class="sec-hdr"><div class="sec-ttl fox-s">🟢 Fox's Quests</div><button class="sec-btn fox-b" onclick="switchTab('add');setP('fox')">+ Add</button></div>
-      <div id="mgr-fox"></div>
+      <div class="mgr-section-hdr active-hdr">⚔️ Active Tasks</div>
+      <div id="mgr-fox-active"></div>
+      <div class="mgr-section-hdr scheduled-hdr">📅 Scheduled (Recurring)</div>
+      <div id="mgr-fox-scheduled"></div>
+      <!-- FOREST -->
       <div class="sec-hdr"><div class="sec-ttl forest-s">🟠 Forest's Quests</div><button class="sec-btn forest-b" onclick="switchTab('add');setP('forest')">+ Add</button></div>
-      <div id="mgr-forest"></div>
+      <div class="mgr-section-hdr active-hdr">⚔️ Active Tasks</div>
+      <div id="mgr-forest-active"></div>
+      <div class="mgr-section-hdr scheduled-hdr">📅 Scheduled (Recurring)</div>
+      <div id="mgr-forest-scheduled"></div>
     </div>
     <div class="tab-pane" id="pane-scores">
       <div class="score-grid">
@@ -1302,6 +1392,31 @@ body::before {
         <button class="rst-btn" onclick="resetScores('fox')">Reset Fox</button>
         <button class="rst-btn" onclick="resetScores('forest')">Reset Forest</button>
         <button class="rst-btn" onclick="resetScores('all')">Reset All</button>
+      </div>
+
+      <!-- Dark Dragon Score -->
+      <div style="margin-top:20px;padding:16px;background:rgba(139,26,26,0.1);border:1px solid var(--dragon-primary);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-size:22px;">🐉</span>
+          <div>
+            <div style="font-family:'Cinzel Decorative',serif;font-size:14px;color:var(--dragon-bright);">The Dark Dragon</div>
+            <div style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:#aa4444;text-transform:uppercase;">Sniped chores = dark power</div>
+          </div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="font-family:'Cinzel Decorative',serif;font-size:22px;color:var(--dragon-bright);" id="s-dragon-xp">0</div>
+            <div style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:#aa4444;">DARK XP</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <select id="ov-dragon-op" class="f-input" style="flex:1;">
+            <option value="add">Add</option>
+            <option value="sub">Subtract</option>
+            <option value="set">Set to exact</option>
+          </select>
+          <input id="ov-dragon-xp" type="number" class="f-input" style="flex:1;" placeholder="Dark XP" min="0">
+          <button class="post-btn" style="background:rgba(139,26,26,0.3);border-color:var(--dragon-primary);color:var(--dragon-bright);white-space:nowrap;" onclick="applyDragonOverride()">🐉 Apply</button>
+        </div>
+        <button class="rst-btn" style="margin-top:8px;border-color:var(--dragon-primary);color:#aa4444;" onclick="resetDragon()">Reset Dragon</button>
       </div>
       <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">Quest History</div>
       <div id="hist-list"></div>
@@ -1594,7 +1709,11 @@ body::before {
           <input class="f-input" id="re-deadline" type="number" min="0" placeholder="0">
         </div>
       </div>
-      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 10px">
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 6px">
+        <input type="checkbox" id="re-firstclaim" style="width:18px;height:18px;cursor:pointer;accent-color:#c084fc">
+        <label for="re-firstclaim" class="form-lbl" style="margin:0;cursor:pointer;">⚡ First hero wins</label>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:4px 0 6px">
         <input type="checkbox" id="re-coop" style="width:18px;height:18px;cursor:pointer;accent-color:#38bdf8">
         <label for="re-coop" class="form-lbl" style="margin:0;cursor:pointer;">🤝 Co-op quest</label>
       </div>
@@ -1679,28 +1798,10 @@ body::before {
       <div class="cm-bname" id="cm-title"></div>
       <div class="cm-bdesc" id="cm-desc"></div>
       <div class="cm-reward" id="cm-reward"></div>
-      <img class="cm-preview" id="cm-prev" src="" alt="" style="display:none;width:100%;max-height:200px;object-fit:contain;margin-bottom:12px;border:1px solid var(--border2);">
-      <div id="cm-status" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);text-align:center;margin-bottom:14px;">No photo yet</div>
-      <!-- Step 1: Photo button -->
-      <label for="cm-file" id="cm-photo-btn" style="display:block;width:100%;padding:16px;text-align:center;font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;background:var(--panel2);border:1px dashed var(--border2);color:var(--text-dim);cursor:pointer;margin-bottom:12px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
-        📷 Take Proof Photo
-      </label>
-      <input type="file" id="cm-file" accept="image/*" capture="environment" onchange="handleProof(this)" style="display:none;">
-      <!-- Step 2: Submit button — completely independent, no state classes -->
-      <div id="cm-submit-wrap" style="display:none;">
-        <a href="javascript:void(0)" onclick="submitBounty()" id="cm-submit" class="cm-submit ready" style="display:block;width:100%;padding:18px;text-align:center;font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:5px;text-transform:uppercase;text-decoration:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;box-sizing:border-box;">
-          ⚡ Submit for Approval
-        </a>
-      </div>
+      <a href="javascript:void(0)" onclick="submitBounty()" id="cm-submit" class="cm-submit ready" style="display:block;width:100%;padding:18px;text-align:center;font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:5px;text-transform:uppercase;text-decoration:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;box-sizing:border-box;margin-top:8px;">
+        ⚡ Mark as Complete
+      </a>
     </div>
-  </div>
-</div>
-
-<!-- PHOTO VIEW -->
-<div class="modal-overlay" id="photo-view-modal">
-  <div class="modal">
-    <div class="modal-head"><div class="modal-htitle">Proof Photo</div><button class="modal-x" onclick="closeModal('photo-view-modal')">✕</button></div>
-    <img id="pv-img" src="" alt="Proof">
   </div>
 </div>
 
@@ -1723,7 +1824,7 @@ body::before {
 
 <div id="sync-indicator">⟳ Syncing...</div>
 <div class="notif" id="notif"></div>
-<div class="version-tag">v28</div>
+<div class="version-tag">v30</div>
 
 <script>
 // ============================================================
@@ -1743,7 +1844,6 @@ const firebaseConfig = {
 // Firebase refs (set after init)
 let db = null;
 let stateRef  = null;
-let photosRef = null;  // proof photos — separate from state to keep transactions lean
 let lastWriteId = null;
 let recurringCheckedDate = null;
 let loadingHidden = false;
@@ -1757,12 +1857,12 @@ const PPD = 100;
 let S = {
   fox:    { pts:0, xp:0, balance:0, cleared:0, avatar:'' },
   forest: { pts:0, xp:0, balance:0, cleared:0, avatar:'' },
+  dragon: { xp: 0 },
   bounties: [], subs: [], history: [],
   recurring: [], customTemplates: [],
-  pin: '1234',
-  photos: {}   // { subId: base64 } — populated by photosRef listener, never written to state node
+  pin: '1234'
 };
-let curP = 'fox', curBid = null, curPhoto = null;
+let curP = 'fox', curBid = null;
 
 const DEFAULTS = [
   {id:'b1',player:'fox',   title:'Chamber of Cleanliness', desc:'Clean your bedroom — pick up all clothes, make your bed, and tidy your desk. Leave no mess behind!',     pts:50,diff:'easy',  emoji:'🛏️',active:true},
@@ -1780,23 +1880,16 @@ function initFirebase() {
   try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
-    stateRef  = db.ref('state');
-    photosRef = db.ref('photos');
+    stateRef = db.ref('state');
 
     // ── State listener ──────────────────────────────────────────────────────
     stateRef.on('value', snapshot => {
       const data = snapshot.val();
       if (!data) {
-        // Listener says no data. This could be a genuine empty DB, OR it could
-        // be a stale/reconnecting client whose local cache hasn't loaded yet.
-        // NEVER seed directly from this callback — always confirm with once() first.
         stateRef.once('value').then(confirmedSnap => {
           if (confirmedSnap.val()) {
-            // Real data exists — the listener fired prematurely. Apply it now.
             applySnapshot(confirmedSnap.val());
           } else {
-            // Confirmed truly empty — safe to seed defaults.
-            // Build a fresh object inline — never use the current S which may be dirty.
             const freshSeed = normalizeState({});
             freshSeed.bounties = DEFAULTS;
             freshSeed.pin = '1234'; PIN = '1234';
@@ -1805,21 +1898,12 @@ function initFirebase() {
         }).catch(e => console.warn('State seed confirmation failed:', e));
         return;
       }
-      // Skip echoes of our own writes
       if (data._wid && data._wid === lastWriteId) return;
       applySnapshot(data);
     }, err => {
       console.warn('Firebase state error:', err);
       document.getElementById('loading-msg').textContent = 'Offline — using local data';
       fallbackToLocal();
-    });
-
-    // ── Photos listener ──
-    photosRef.on('value', snapshot => {
-      S.photos = snapshot.val() || {};
-      if (document.getElementById('admin')?.classList.contains('active')) {
-        if ((S.subs||[]).some(s => s.status === 'pending')) renderApprovals();
-      }
     });
 
     // ── Timeout fallback ──
@@ -1831,16 +1915,11 @@ function initFirebase() {
     }, 6000);
 
     // ── Visibility handler ──────────────────────────────────────────────────
-    // Force a fresh pull when the user returns after device was idle/backgrounded.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && stateRef) {
         showSyncing(true);
-        Promise.all([
-          stateRef.once('value'),
-          photosRef ? photosRef.once('value') : Promise.resolve(null)
-        ]).then(([stateSnap, photosSnap]) => {
-          if (stateSnap && stateSnap.val()) applySnapshot(stateSnap.val());
-          if (photosSnap && photosSnap.val()) S.photos = photosSnap.val();
+        stateRef.once('value').then(snap => {
+          if (snap && snap.val()) applySnapshot(snap.val());
           showSyncing(false);
         }).catch(() => showSyncing(false));
       }
@@ -1852,16 +1931,12 @@ function initFirebase() {
   }
 }
 
-// Force-pull latest state and photos from Firebase
+// Force-pull latest state from Firebase
 function forceSync() {
   if (!stateRef) { showNotif('Not connected to Firebase'); return; }
   showSyncing(true);
-  Promise.all([
-    stateRef.once('value'),
-    photosRef ? photosRef.once('value') : Promise.resolve(null)
-  ]).then(([stateSnap, photosSnap]) => {
-    if (stateSnap.val()) applySnapshot(stateSnap.val());
-    if (photosSnap && photosSnap.val()) S.photos = photosSnap.val();
+  stateRef.once('value').then(snap => {
+    if (snap.val()) applySnapshot(snap.val());
     showSyncing(false);
     showNotif('✦ Sync complete — data is up to date');
   }).catch(() => {
@@ -1903,24 +1978,7 @@ function hideLoading() {
 //  SHARED STATE APPLY — used by listener, once(), and fallback
 // ============================================================
 function applySnapshot(data) {
-  const existingPhotos = S.photos || {}; // preserve photos from photosRef listener
   S = normalizeState(JSON.parse(JSON.stringify(data)));
-  S.photos = existingPhotos;
-
-  // Migration: if old data has inline photos in subs, move them out to S.photos
-  // and write to db.ref('photos') so other devices get them too
-  const toMigrate = {};
-  S.subs.forEach(sub => {
-    if (sub.photo && sub.photo.length > 100) { // real base64 data
-      S.photos[sub.id] = sub.photo;
-      toMigrate[sub.id] = sub.photo;
-      sub.photo = ''; // strip from sub going forward
-    }
-  });
-  if (Object.keys(toMigrate).length && photosRef) {
-    photosRef.update(toMigrate); // write photos to the photos path (non-blocking)
-  }
-
   PIN = S.pin;
   restoreAvatars();
   updateHome();
@@ -1957,9 +2015,6 @@ function saveLocal() {
   try {
     const slim = JSON.parse(JSON.stringify(S));
     slim._wid = S._wid || '';
-    // Strip photos entirely — they live in db.ref('photos'), not state
-    if (slim.subs) slim.subs = slim.subs.map(s => ({...s, photo: ''}));
-    delete slim.photos;
     localStorage.setItem('hbb_v2', JSON.stringify(slim));
   } catch(e) { console.warn('localStorage save failed:', e); }
 }
@@ -1975,9 +2030,8 @@ function normalizeState(s) {
   s.recurring      = toArr(s.recurring);
   s.customTemplates= toArr(s.customTemplates);
   s.hiddenBuiltins = toArr(s.hiddenBuiltins);
-  // photos is NOT stored in the state node — managed by photosRef listener
-  delete s.photos;
   if (!s.pin) s.pin = '1234';
+  if (!s.dragon) s.dragon = { xp: 0 };
   ['fox','forest'].forEach(p => {
     if (!s[p]) s[p] = { pts:0, xp:0, balance:0, cleared:0, avatar:'' };
     if (s[p].xp      === undefined) s[p].xp      = s[p].pts || 0;
@@ -2002,49 +2056,26 @@ function save() {
   S._wid = wid;
 
   if (db) {
-    // Build the payload: deep copy, strip photos from subs, remove photos map
     const payload = JSON.parse(JSON.stringify(S));
     payload._wid = wid;
-    if (payload.subs) payload.subs = payload.subs.map(s => ({...s, photo: ''}));
-    delete payload.photos;
 
     db.ref('state').transaction(current => {
-      // ABORT if current is null — this means Firebase's local cache doesn't have
-      // the data yet (stale connection, just reconnected, etc.). Returning undefined
-      // aborts the transaction safely. Firebase will retry with real data once the
-      // connection is established. We must NEVER write our local S over a null —
-      // that's what caused the score reset.
       if (!current) return; // undefined = abort, do not write
-
       current = normalizeState(current);
-
-      // Preserve any subs the DB has that we don't know about locally.
-      // This is the merge that prevents overwriting concurrent submissions.
       const ourSubIds = new Set((payload.subs || []).map(s => s.id));
       const extraSubs = current.subs.filter(s => !ourSubIds.has(s.id));
       if (extraSubs.length) {
         payload.subs = [...payload.subs, ...extraSubs];
-        // Also update local S so it stays in sync with what we're committing
         extraSubs.forEach(sub => {
-          if (!S.subs.some(s => s.id === sub.id)) {
-            S.subs.push({...sub, photo: S.photos[sub.id] || ''});
-          }
+          if (!S.subs.some(s => s.id === sub.id)) S.subs.push(sub);
         });
       }
-      return payload; // commit the merged payload
+      return payload;
     }, (err, committed) => {
       if (err) console.warn('Save transaction failed:', err);
-      // If transaction aborted (committed=false, no error) it means current was null —
-      // the connection was stale. Fall back to a direct .set() but ONLY after
-      // confirming via .once() that the DB is genuinely empty (not just uncached).
       if (!err && !committed) {
         db.ref('state').once('value').then(snap => {
-          if (!snap.val()) {
-            // DB is confirmed empty — safe to write (e.g. after a manual DB wipe)
-            db.ref('state').set(payload);
-          }
-          // If snap.val() exists, the DB has real data — do nothing.
-          // The real-time listener will deliver it to us shortly.
+          if (!snap.val()) db.ref('state').set(payload);
         }).catch(e => console.warn('once() fallback failed:', e));
       }
     }, false);
@@ -2281,7 +2312,7 @@ function toggleCompleted() {
 
 function openClaim(id) {
   const b = S.bounties.find(x => x.id === id); if (!b) return;
-  curBid = id; curPhoto = null;
+  curBid = id;
   document.getElementById('cm-title').textContent = b.emoji + ' ' + b.title;
   document.getElementById('cm-desc').textContent = b.desc;
   const isXpOnly = b.xpOnly || false;
@@ -2290,55 +2321,21 @@ function openClaim(id) {
     : `✦ Reward: ${b.pts} XP + ${b.pts} Points`;
   document.getElementById('cm-box').className = 'modal ' + curP + '-m';
   document.getElementById('cm-box').setAttribute('data-player', curP);
-  // Store FULL bounty in DOM so Firebase re-init can't break submit
   document.getElementById('cm-box').setAttribute('data-bounty', JSON.stringify(b));
-  document.getElementById('cm-prev').style.display = 'none';
-  document.getElementById('cm-prev').src = '';
-  document.getElementById('cm-file').value = '';
-  document.getElementById('cm-status').textContent = 'No photo yet';
-  document.getElementById('cm-status').style.color = 'var(--text-dim)';
-  document.getElementById('cm-photo-btn').style.borderColor = 'var(--border2)';
-  document.getElementById('cm-photo-btn').style.color = 'var(--text-dim)';
-  document.getElementById('cm-photo-btn').textContent = '📷 Take Proof Photo';
-  document.getElementById('cm-submit-wrap').style.display = 'none';
+  const btn = document.getElementById('cm-submit');
+  btn.ontouchstart = function(ev) { ev.preventDefault(); submitBounty(); };
   document.getElementById('claim-modal').classList.add('active');
-}
-
-function handleProof(input) {
-  const file = input.files[0]; if (!file) return;
-  const r = new FileReader();
-  r.onload = e => {
-    curPhoto = e.target.result;
-    // Store in DOM so iPad memory resets can't wipe it
-    document.getElementById('cm-prev').src = curPhoto;
-    document.getElementById('cm-prev').style.display = 'block';
-    document.getElementById('cm-prev').setAttribute('data-photo', curPhoto);
-    document.getElementById('cm-submit').setAttribute('data-bid', curBid);
-    document.getElementById('cm-status').textContent = '✓ Photo ready — tap Submit';
-    document.getElementById('cm-status').style.color = 'var(--fox-bright)';
-    document.getElementById('cm-photo-btn').textContent = '📷 Retake Photo';
-    document.getElementById('cm-photo-btn').style.borderColor = 'var(--gold-dim)';
-    document.getElementById('cm-photo-btn').style.color = 'var(--gold)';
-    const wrap = document.getElementById('cm-submit-wrap');
-    wrap.style.display = 'block';
-    const btn = document.getElementById('cm-submit');
-    btn.ontouchstart = function(ev) { ev.preventDefault(); submitBounty(); };
-  };
-  r.readAsDataURL(file);
 }
 
 function submitBounty() {
   try {
-    const photo = document.getElementById('cm-prev').getAttribute('data-photo');
-    const bStr  = document.getElementById('cm-box').getAttribute('data-bounty');
-    const player= document.getElementById('cm-box').getAttribute('data-player') || curP || 'fox';
-    if (!photo) { alert('No photo data found. Please retake the photo.'); return; }
-    if (!bStr)  { alert('Quest data missing. Please close and reopen the quest.'); return; }
+    const bStr   = document.getElementById('cm-box').getAttribute('data-bounty');
+    const player = document.getElementById('cm-box').getAttribute('data-player') || curP || 'fox';
+    if (!bStr) { alert('Quest data missing. Please close and reopen the quest.'); return; }
     const b = JSON.parse(bStr);
     if (!S.subs)     S.subs     = [];
     if (!S.bounties) S.bounties = [];
 
-    // Guard: don't double-submit the same quest
     const alreadyPending = S.subs.some(s => s.bountyId === b.id && s.player === player && s.status === 'pending');
     if (alreadyPending) {
       closeModal('claim-modal');
@@ -2347,18 +2344,13 @@ function submitBounty() {
     }
 
     const subId  = 'sub_' + Date.now();
-    // Sub stored in state WITHOUT photo — photo lives at db.ref('photos/{subId}')
     const newSub = {
       id: subId, bountyId: b.id, bountyTitle: b.title,
       player, pts: b.pts, xpOnly: b.xpOnly || false,
-      status: 'pending', time: new Date().toISOString(),
-      photo: '' // always empty in state
+      status: 'pending', time: new Date().toISOString()
     };
 
-    // Optimistic local update — include photo in memory only for this device's display
-    if (!S.photos) S.photos = {};
-    S.photos[subId] = photo;
-    S.subs.push({...newSub, photo}); // keep photo in local S for immediate rendering
+    S.subs.push(newSub);
     closeModal('claim-modal');
     renderBoard();
     showNotif('⚡ Quest submitted — awaiting approval!');
@@ -2366,29 +2358,18 @@ function submitBounty() {
     saveLocal();
 
     if (db) {
-      // Step 1: Write photo separately (non-blocking, no transaction needed)
-      photosRef.child(subId).set(photo).catch(e => console.warn('Photo write failed:', e));
-
-      // Step 2: Append sub (without photo) to state via transaction.
       const wid = generateWid();
       db.ref('state').transaction(current => {
-        // If current is null, Firebase's local cache is cold (stale connection).
-        // Abort — do NOT write local S to the DB. Same rule as save() and approve().
-        if (!current) return; // undefined = abort, no write
-
+        if (!current) return;
         current = normalizeState(current);
-        // Idempotent: if sub already present (transaction retry), return unchanged
-        if (current.subs.some(s => s.id === subId)) {
-          return current;
-        }
-        current.subs.push(newSub); // newSub has photo: ''
+        if (current.subs.some(s => s.id === subId)) return current;
+        current.subs.push(newSub);
         current._wid = wid;
         return current;
       }, (err, committed) => {
         if (err || !committed) {
           showNotif('⚠️ Sync error — submission may not have saved. Please resubmit.');
           S.subs = S.subs.filter(s => s.id !== subId);
-          delete S.photos[subId];
           renderBoard(); updateBadge();
         } else {
           lastWriteId = wid;
@@ -2396,7 +2377,7 @@ function submitBounty() {
       }, false);
     }
   } catch(err) {
-    alert('Submit error: ' + err.message + '\nPlease screenshot this and report it.');
+    alert('Submit error: ' + err.message);
   }
 }
 
@@ -2480,15 +2461,10 @@ function updateBadge() {
 
 function renderApprovals() {
   const el = document.getElementById('approvals-list');
-  const list = S.subs.filter(s=>s.status==='pending');
+  const list = S.subs.filter(s => s.status === 'pending');
   if (!list.length) { el.innerHTML = `<div class="empty-st"><div class="empty-ico">✅</div><div class="empty-txt">No pending quests</div></div>`; return; }
-  el.innerHTML = list.map(s => {
-    const photoSrc = S.photos[s.id] || s.photo || '';
-    const thumbHtml = photoSrc
-      ? `<img class="pend-thumb" src="${photoSrc}" onclick="viewPhoto('${s.id}')">`
-      : `<div class="pend-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--panel2);font-size:20px;">📷</div>`;
-    return `<div class="pend-card">
-      ${thumbHtml}
+  el.innerHTML = list.map(s => `
+    <div class="pend-card">
       <div class="pend-info">
         <div class="pend-meta"><span class="p-tag ${s.player}-tag">${s.player}</span><span class="p-name">${s.bountyTitle}</span></div>
         <div class="p-pts">✦ ${s.pts} XP${s.xpOnly ? ' ⚡ (XP only)' : ' + ' + s.pts + ' pts'}</div>
@@ -2498,8 +2474,7 @@ function renderApprovals() {
           <button class="rej-btn" onclick="reject('${s.id}')">✕ Reject</button>
         </div>
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
 function approve(id) {
@@ -2590,40 +2565,88 @@ function reject(id) {
   showNotif('Quest rejected — try again!');
 }
 
-function viewPhoto(id) {
-  const photoSrc = (S.photos && S.photos[id]) || (S.subs.find(s=>s.id===id)||{}).photo || '';
-  if (!photoSrc) { showNotif('Photo not available'); return; }
-  document.getElementById('pv-img').src = photoSrc;
-  document.getElementById('photo-view-modal').classList.add('active');
-}
-
 function renderManage() {
+  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
   ['fox','forest'].forEach(p => {
-    const el = document.getElementById('mgr-'+p);
-    const list = S.bounties.filter(b=>b.player===p);
-    if (!list.length) { el.innerHTML=`<div class="empty-st" style="padding:14px"><div class="empty-txt">No quests yet</div></div>`; return; }
-    el.innerHTML = list.map(b=>{
-      const meta = [
-        b.pts + ' pts',
-        b.diff,
-        b.recurringId ? '🔁 recurring' : '',
-        b.deadline    ? `⏳ ${b.deadline}h` : '',
-        b.firstClaim  ? '⚡ first wins' : '',
-        b.xpOnly      ? '⚡ XP only' : '',
-      ].filter(Boolean).join(' · ');
-      return `<div class="mgr">
-        <div class="mgr-emoji">${b.emoji||'⚔️'}</div>
-        <div class="mgr-info">
-          <div class="mgr-name">${b.title}</div>
-          <div class="mgr-meta">${meta}</div>
-        </div>
-        <div class="mgr-acts">
-          <button class="tog-b" onclick="openChoreEdit('${b.id}')">Edit</button>
-          <button class="tog-b ${b.active?'on':''}" onclick="togB('${b.id}')">${b.active?'On':'Off'}</button>
-          <button class="del-b" onclick="delB('${b.id}')">Del</button>
-        </div>
-      </div>`;
-    }).join('');
+    // ── Active Tasks ─────────────────────────────────────────────────────────
+    const activeEl = document.getElementById('mgr-'+p+'-active');
+    const activeBounties = S.bounties.filter(b => b.player === p && b.active);
+
+    if (!activeBounties.length) {
+      activeEl.innerHTML = `<div class="empty-st" style="padding:10px 14px"><div class="empty-txt" style="font-size:12px">No active quests</div></div>`;
+    } else {
+      activeEl.innerHTML = activeBounties.map(b => {
+        const sub    = S.subs.find(s => s.bountyId === b.id && s.player === p);
+        const status = sub ? sub.status : 'available';
+        const statusBadge =
+          status === 'approved' ? `<span style="color:#5FD155;font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">✓ DONE</span>` :
+          status === 'pending'  ? `<span style="color:var(--gold);font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">⏳ PENDING</span>` :
+          `<span style="color:var(--text-dim);font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">AVAILABLE</span>`;
+        const meta = [
+          b.pts + ' pts', b.diff,
+          b.recurringId ? '🔁' : '',
+          b.deadline    ? `⏳ ${b.deadline}h` : '',
+          b.xpOnly      ? '⚡ XP only' : '',
+          b.coop        ? '🤝 co-op' : '',
+        ].filter(Boolean).join(' · ');
+        return `<div class="mgr">
+          <div class="mgr-emoji">${b.emoji||'⚔️'}</div>
+          <div class="mgr-info">
+            <div class="mgr-name">${b.title}</div>
+            <div class="mgr-meta">${meta}</div>
+            <div style="margin-top:3px;">${statusBadge}</div>
+          </div>
+          <div class="mgr-acts">
+            <button class="tog-b" onclick="openChoreEdit('${b.id}')">Edit</button>
+            <button class="snipe-btn" onclick="snipeChore('${b.id}')" title="Snipe — Dragon claims this chore">🐉</button>
+            <button class="tog-b ${b.active?'on':''}" onclick="togB('${b.id}')">${b.active?'On':'Off'}</button>
+            <button class="del-b" onclick="delB('${b.id}')">Del</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Scheduled (Recurring definitions) ───────────────────────────────────
+    const scheduledEl = document.getElementById('mgr-'+p+'-scheduled');
+    const playerRecurring = (S.recurring||[]).filter(r =>
+      (r.player === p || r.player === 'both') && !r.paused
+    );
+
+    if (!playerRecurring.length) {
+      scheduledEl.innerHTML = `<div class="empty-st" style="padding:10px 14px"><div class="empty-txt" style="font-size:12px">No recurring quests configured</div></div>`;
+    } else {
+      scheduledEl.innerHTML = playerRecurring.map(r => {
+        let schedStr;
+        if (r.freq === 'monthly')        schedStr = `Monthly — day ${r.monthDay||1}`;
+        else if (r.freq === 'biweekly')  schedStr = `Every other ${DAY_NAMES[r.days&&r.days[0]||1]}`;
+        else if (r.freq === 'weekly')    schedStr = `Weekly — ${DAY_NAMES[r.days&&r.days[0]||1]}`;
+        else schedStr = (r.days||[]).map(d=>DAY_NAMES[d]).join(', ');
+        if (r.postTime && r.postTime !== '00:00') schedStr += ` @ ${r.postTime}`;
+        const meta = [
+          r.pts + ' pts', r.diff,
+          r.xpOnly ? '⚡ XP only' : '',
+          r.coop   ? '🤝 co-op' : '',
+          r.deadline ? `⏳ ${r.deadline}h` : '',
+        ].filter(Boolean).join(' · ');
+        const alreadyPostedToday = r.lastPosted === new Date().toDateString();
+        const statusBadge = alreadyPostedToday
+          ? `<span style="color:#5FD155;font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">✓ Posted today</span>`
+          : `<span style="color:var(--text-dim);font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">${schedStr}</span>`;
+        return `<div class="mgr">
+          <div class="mgr-emoji">${r.emoji||'⏰'}</div>
+          <div class="mgr-info">
+            <div class="mgr-name">${r.title}</div>
+            <div class="mgr-meta">${meta}</div>
+            <div style="margin-top:3px;">${statusBadge}</div>
+          </div>
+          <div class="mgr-acts">
+            <button class="tog-b" onclick="openRecurEdit('${r.id}')">Edit</button>
+            <button class="tog-b on" onclick="switchTab('recurring')">Schedule</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
   });
 }
 
@@ -3198,6 +3221,8 @@ function renderScores() {
     document.getElementById(`s-${p}-pts`).textContent = bal.toLocaleString();
     document.getElementById(`s-${p}-money`).textContent = '$' + (bal/PPD).toFixed(2);
   });
+  // Dragon
+  document.getElementById('s-dragon-xp').textContent = (S.dragon?.xp||0).toLocaleString();
   const hist=document.getElementById('hist-list');
   if(!S.history.length){hist.innerHTML=`<div class="empty-st" style="padding:14px"><div class="empty-txt">No history yet</div></div>`;return;}
   hist.innerHTML=S.history.map((h,i)=>`
@@ -3218,6 +3243,43 @@ function payOut(who) {
   S[who].balance = 0;
   save(); renderScores(); updateHome();
   showNotif(`💰 Paid out ${name}! XP and rank preserved.`);
+}
+
+// ── Snipe: Commander claims a chore, awarding XP to the Dark Dragon ──────────
+function snipeChore(bountyId) {
+  const b = S.bounties.find(x => x.id === bountyId); if (!b) return;
+  if (!confirm(`🐉 SNIPE "${b.title}"?\n\nThe Dark Dragon claims this chore and gains ${b.pts} Dark XP.\nThe quest will be removed from the board.`)) return;
+  // Award XP to dragon
+  if (!S.dragon) S.dragon = { xp: 0 };
+  S.dragon.xp = (S.dragon.xp || 0) + b.pts;
+  // Remove bounty and any pending sub for it
+  S.bounties = S.bounties.filter(x => x.id !== bountyId);
+  S.subs     = S.subs.filter(s => s.bountyId !== bountyId);
+  // Add to history
+  S.history.unshift({ player: '🐉 Dragon', title: b.title, pts: b.pts, xpOnly: false, time: new Date().toISOString() });
+  save(); renderManage(); updateHome(); renderScores();
+  showNotif(`🐉 The Dark Dragon snatched "${b.title}"! +${b.pts} Dark XP`);
+}
+
+function applyDragonOverride() {
+  const op  = document.getElementById('ov-dragon-op').value;
+  const val = parseInt(document.getElementById('ov-dragon-xp').value);
+  if (isNaN(val) || val < 0) { showNotif('Enter a valid amount'); return; }
+  const opLabel = op === 'add' ? `+${val}` : op === 'sub' ? `-${val}` : `= ${val}`;
+  if (!confirm(`Set Dragon's Dark XP ${opLabel}?`)) return;
+  if (!S.dragon) S.dragon = { xp: 0 };
+  const cur = S.dragon.xp || 0;
+  S.dragon.xp = op === 'add' ? cur + val : op === 'sub' ? Math.max(0, cur - val) : val;
+  document.getElementById('ov-dragon-xp').value = '';
+  save(); renderScores(); updateHome();
+  showNotif('🐉 Dragon XP updated');
+}
+
+function resetDragon() {
+  if (!confirm('Reset the Dark Dragon to 0 XP?')) return;
+  S.dragon = { xp: 0 };
+  save(); renderScores(); updateHome();
+  showNotif('🐉 The Dragon sleeps... for now.');
 }
 
 function resetScores(who) {
@@ -3372,6 +3434,31 @@ function updateHome() {
     document.getElementById(`${p}-lv-next`).textContent = next ? xpToNext.toLocaleString() + ' XP to ' + next.title : 'MAX RANK';
     document.getElementById(`${p}-xp`).style.width = pct + '%';
   });
+  updateDragonBar();
+}
+
+function updateDragonBar() {
+  const dxp = S.dragon?.xp || 0;
+  // Dragon threat bar: caps visually at 1000 XP for full red bar
+  const capXp   = 1000;
+  const pct     = Math.min(100, Math.round(dxp / capXp * 100));
+  const el = document.getElementById('dragon-bar');
+  const pctEl = document.getElementById('dragon-threat-pct');
+  const xpEl  = document.getElementById('dragon-xp-home');
+  const warn  = document.getElementById('dragon-warning-text');
+  const sdxp  = document.getElementById('s-dragon-xp');
+  if (el)   el.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (xpEl)  xpEl.textContent  = dxp.toLocaleString();
+  if (sdxp)  sdxp.textContent  = dxp.toLocaleString();
+  if (warn) {
+    if      (pct >= 90) warn.textContent = '⚠️ The Dragon nears full power — defeat him now!';
+    else if (pct >= 70) warn.textContent = '🔥 The Dragon grows strong. Heroes must act!';
+    else if (pct >= 50) warn.textContent = '⚔️ The Dragon stirs. Complete your quests!';
+    else if (pct >= 25) warn.textContent = '🌑 Darkness spreads across the realm...';
+    else if (pct >  0)  warn.textContent = '🐉 A shadow falls. The Dragon awakens...';
+    else                warn.textContent = 'The realm is at peace... for now.';
+  }
 }
 
 function openLevelModal(p) {
