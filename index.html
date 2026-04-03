@@ -1826,7 +1826,7 @@ body::before {
 
 <div id="sync-indicator">⟳ Syncing...</div>
 <div class="notif" id="notif"></div>
-<div class="version-tag">v31</div>
+<div class="version-tag">v32</div>
 
 <script>
 // ============================================================
@@ -2573,7 +2573,11 @@ function renderManage() {
   ['fox','forest'].forEach(p => {
     // ── Active Tasks ─────────────────────────────────────────────────────────
     const activeEl = document.getElementById('mgr-'+p+'-active');
-    const activeBounties = S.bounties.filter(b => b.player === p && b.active);
+    const activeBounties = S.bounties.filter(b => {
+      if (b.player !== p || !b.active) return false;
+      const sub = S.subs.find(s => s.bountyId === b.id && s.player === p);
+      return !sub || sub.status !== 'approved'; // exclude done tasks
+    });
 
     if (!activeBounties.length) {
       activeEl.innerHTML = `<div class="empty-st" style="padding:10px 14px"><div class="empty-txt" style="font-size:12px">No active quests</div></div>`;
@@ -2581,10 +2585,9 @@ function renderManage() {
       activeEl.innerHTML = activeBounties.map(b => {
         const sub    = S.subs.find(s => s.bountyId === b.id && s.player === p);
         const status = sub ? sub.status : 'available';
-        const statusBadge =
-          status === 'approved' ? `<span style="color:#5FD155;font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">✓ DONE</span>` :
-          status === 'pending'  ? `<span style="color:var(--gold);font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">⏳ PENDING</span>` :
-          `<span style="color:var(--text-dim);font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">AVAILABLE</span>`;
+        const statusBadge = status === 'pending'
+          ? `<span style="color:var(--gold);font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">⏳ PENDING APPROVAL</span>`
+          : `<span style="color:var(--text-dim);font-size:9px;font-family:'Cinzel',serif;letter-spacing:1px;">AVAILABLE</span>`;
         const meta = [
           b.pts + ' pts', b.diff,
           b.recurringId ? '🔁' : '',
