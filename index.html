@@ -313,7 +313,64 @@ body::before {
 }
 .portal-link:hover { color: var(--gold); border-color: var(--gold-dim); }
 
-/* ── Dark Dragon Threat Bar ─────────────────────────────────── */
+/* ── Board-clear celebration overlay ────────────────────────── */
+#board-clear-modal {
+  position: fixed; inset: 0; z-index: 9000;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.85);
+  animation: fadeInFast 0.3s ease;
+}
+#board-clear-modal.show { display: flex; }
+@keyframes fadeInFast { from { opacity:0; } to { opacity:1; } }
+.bcm-inner {
+  text-align: center; padding: 40px 32px; max-width: 360px;
+  background: var(--panel2); border: 1px solid var(--gold-dim);
+  position: relative; overflow: hidden;
+}
+.bcm-inner::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(200,160,48,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+.bcm-icon { font-size: 64px; animation: bcmPop 0.5s 0.1s ease both; }
+@keyframes bcmPop {
+  0%   { transform: scale(0.3); opacity: 0; }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.bcm-title { font-family: 'Cinzel Decorative', serif; font-size: 20px; color: var(--gold-bright); margin: 16px 0 8px; }
+.bcm-msg   { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 16px; color: var(--text); line-height: 1.5; margin-bottom: 18px; }
+.bcm-bonus { font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px; color: var(--gold); margin-bottom: 6px; }
+.bcm-dragon-hit { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px; color: var(--dragon-bright); margin-bottom: 22px; }
+.bcm-close { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; color: var(--text-dim); border: 1px solid var(--border2); padding: 10px 24px; }
+.bcm-close:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* ── Dragon-day red lightning background ─────────────────────── */
+body.dragon-day::after {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    /* Lightning bolt 1 — left side */
+    linear-gradient(168deg, transparent 0%, transparent 38%, rgba(180,20,20,0.7) 38.5%, rgba(220,40,40,0.9) 39%, transparent 39.5%, transparent 43%, rgba(180,20,20,0.5) 43.5%, rgba(200,30,30,0.7) 44%, transparent 44.5%, transparent 100%),
+    /* Lightning bolt 2 — right side */
+    linear-gradient(195deg, transparent 0%, transparent 25%, rgba(180,20,20,0.6) 25.5%, rgba(210,30,30,0.85) 26%, transparent 26.5%, transparent 32%, rgba(160,15,15,0.5) 32.5%, rgba(190,25,25,0.65) 33%, transparent 33.5%, transparent 100%),
+    /* Lightning bolt 3 — centre */
+    linear-gradient(178deg, transparent 0%, transparent 55%, rgba(200,30,30,0.5) 55.5%, rgba(230,50,50,0.8) 56%, transparent 56.5%, transparent 60%, rgba(180,20,20,0.4) 60.5%, rgba(210,35,35,0.6) 61%, transparent 61.5%, transparent 100%);
+  background-size: 25% 100%, 30% 100%, 20% 100%;
+  background-position: 12% 0, 72% 0, 48% 0;
+  background-repeat: no-repeat;
+  animation: lightningFlicker 4s ease-in-out infinite;
+}
+@keyframes lightningFlicker {
+  0%,100% { opacity: 0.6; }
+  15%     { opacity: 1;   }
+  17%     { opacity: 0.3; }
+  19%     { opacity: 0.9; }
+  50%     { opacity: 0.5; }
+  65%     { opacity: 0.8; }
+  67%     { opacity: 0.2; }
+  69%     { opacity: 0.7; }
+}
 .dragon-threat {
   width: 100%;
   max-width: 760px;
@@ -1410,14 +1467,20 @@ body::before {
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;">
-          <select id="ov-dragon-op" class="f-input" style="flex:1;">
-            <option value="add">Add</option>
-            <option value="sub">Subtract</option>
-            <option value="set">Set to exact</option>
-          </select>
-          <input id="ov-dragon-xp" type="number" class="f-input" style="flex:1;" placeholder="Dark XP" min="0">
-          <button class="post-btn" style="background:rgba(139,26,26,0.3);border-color:var(--dragon-primary);color:var(--dragon-bright);white-space:nowrap;" onclick="applyDragonOverride()">🐉 Apply</button>
+          <div style="flex:1;">
+            <label style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#aa4444;display:block;margin-bottom:4px;">Operation</label>
+            <select id="ov-dragon-op" class="f-input" style="width:100%;">
+              <option value="add">Add</option>
+              <option value="sub">Subtract</option>
+              <option value="set">Set to exact</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#aa4444;display:block;margin-bottom:4px;">Dark XP Amount</label>
+            <input id="ov-dragon-xp" type="number" class="f-input" style="width:100%;" placeholder="Amount" min="0">
+          </div>
         </div>
+        <button class="post-btn" style="background:rgba(139,26,26,0.3);border-color:var(--dragon-primary);color:var(--dragon-bright);width:100%;margin-top:8px;" onclick="applyDragonOverride()">🐉 Apply Dragon Override</button>
         <button class="rst-btn" style="margin-top:8px;border-color:var(--dragon-primary);color:#aa4444;" onclick="resetDragon()">Reset Dragon</button>
       </div>
       <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">Quest History</div>
@@ -1807,6 +1870,18 @@ body::before {
   </div>
 </div>
 
+<!-- BOARD CLEAR CELEBRATION -->
+<div id="board-clear-modal">
+  <div class="bcm-inner">
+    <div class="bcm-icon" id="bcm-icon">⚔️</div>
+    <div class="bcm-title" id="bcm-title">BOARD CLEARED!</div>
+    <div class="bcm-msg" id="bcm-msg">A true hero rises!</div>
+    <div class="bcm-bonus" id="bcm-bonus">+50 XP BONUS EARNED</div>
+    <div class="bcm-dragon-hit">🐉 The Dragon recoils! −15 Dark XP</div>
+    <div class="bcm-close" onclick="document.getElementById('board-clear-modal').classList.remove('show')">Continue</div>
+  </div>
+</div>
+
 <!-- LOCK -->
 <div id="lockscreen">
   <div class="lk-icon">🏰</div>
@@ -1826,7 +1901,7 @@ body::before {
 
 <div id="sync-indicator">⟳ Syncing...</div>
 <div class="notif" id="notif"></div>
-<div class="version-tag">v34</div>
+<div class="version-tag">v36</div>
 
 <script>
 // ============================================================
@@ -2399,6 +2474,9 @@ function checkPin() {
   if (document.getElementById('pin-input').value === PIN) {
     document.getElementById('lockscreen').style.display = 'none';
     renderAdmin(); showScreen('admin');
+    // Land on Add Quest tab — fastest path to adding chores
+    const pending = S.subs.filter(s => s.status === 'pending').length;
+    switchTab(pending > 0 ? 'approvals' : 'add');
   } else {
     document.getElementById('pin-input').classList.add('err');
     document.getElementById('pin-input').value = '';
@@ -2498,6 +2576,7 @@ function approve(id) {
     save();
     renderApprovals(); renderScores(); updateBadge(); updateHome();
     showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly ? ' (XP only)' : ''}`);
+    setTimeout(() => checkBoardClear(player), 300);
     return;
   }
 
@@ -2560,6 +2639,7 @@ function approve(id) {
     if (data) {
       applySnapshot(data);
       showNotif(`✦ Approved! +${pts} XP for ${player}${xpOnly ? ' (XP only)' : ''}`);
+      setTimeout(() => checkBoardClear(player), 300);
     }
   }, false);
 }
@@ -2568,6 +2648,34 @@ function reject(id) {
   const sub = S.subs.find(s=>s.id===id); if (!sub) return;
   sub.status='rejected'; save(); renderApprovals(); updateBadge();
   showNotif('Quest rejected — try again!');
+}
+
+// Check if a player has cleared every active quest on their board.
+// Awards +50 bonus XP to the player and deals -15 XP to the Dark Dragon.
+function checkBoardClear(player) {
+  const active = S.bounties.filter(b => b.player === player && b.active);
+  if (!active.length) return; // no quests on board
+  const allDone = active.every(b => {
+    const sub = S.subs.find(s => s.bountyId === b.id && s.player === player);
+    return sub && sub.status === 'approved';
+  });
+  if (!allDone) return;
+
+  const BONUS = 75;
+  const DRAGON_HIT = 15;
+  const heroName = player === 'fox' ? 'Fox' : 'Forest';
+
+  S[player].xp  = (S[player].xp || 0) + BONUS;
+  S[player].pts = S[player].xp;
+  // XP only — no wallet credit
+  if (!S.dragon) S.dragon = { xp: 0 };
+  S.dragon.xp = Math.max(0, (S.dragon.xp || 0) - DRAGON_HIT);
+  S.history.unshift({ player, title: '⚔️ Board Cleared — Bonus!', pts: BONUS, xpOnly: true, time: new Date().toISOString() });
+  save();
+  updateHome(); renderScores();
+
+  // Show dramatic full-screen celebration notification
+  showBoardClearCelebration(heroName, BONUS, DRAGON_HIT);
 }
 
 function renderManage() {
@@ -2839,8 +2947,17 @@ function renderTemplates() {
   const all = getAllTemplates();
   const filtered = query ? all.filter(t=>t.title.toLowerCase().includes(query)||t.desc.toLowerCase().includes(query)||(t.cat||'').toLowerCase().includes(query)) : all;
 
+  // Count how many times each template title has been used (bounties + history)
+  const useCounts = {};
+  (S.bounties||[]).forEach(b => { useCounts[b.title] = (useCounts[b.title]||0) + 1; });
+  (S.history||[]).forEach(h => { useCounts[h.title] = (useCounts[h.title]||0) + 1; });
+
+  // Sort: most-used first within each category
   const cats = {};
   filtered.forEach(t=>{ if(!cats[t.cat]) cats[t.cat]=[]; cats[t.cat].push(t); });
+  Object.keys(cats).forEach(cat => {
+    cats[cat].sort((a, b) => (useCounts[b.title]||0) - (useCounts[a.title]||0));
+  });
 
   const el = document.getElementById('tpl-library');
   if(!filtered.length){ el.innerHTML=`<div class="empty-st"><div class="empty-ico">🔍</div><div class="empty-txt">No matches found</div></div>`; return; }
@@ -2947,7 +3064,7 @@ function renderRecurring() {
     return `<div class="recur-card">
       <div class="recur-emoji">${r.emoji||'⏰'}</div>
       <div class="recur-info">
-        <div class="recur-name">${r.title}</div>
+        <div class="recur-name">${r.title} <span style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:2px 7px;margin-left:6px;vertical-align:middle;${r.player==='fox'?'background:var(--fox-dark);color:var(--fox-bright);':r.player==='forest'?'background:var(--forest-dark);color:var(--forest-bright);':'background:var(--border2);color:var(--text-dim);'}">${r.player==='both'?'👥 BOTH':r.player==='fox'?'🟢 FOX':'🟠 FOREST'}</span></div>
         <div class="recur-meta">${r.player==='both'?'Both heroes':r.player} · ${r.pts} pts · ${r.diff}${r.xpOnly?' · ⚡ XP only':''}${r.postTime&&r.postTime!=='00:00'?' · 🕐 '+r.postTime:''}${r.deadline?` · ⏳ ${r.deadline}h`:''}${r.firstClaim?' · ⚡ first wins':''}${r.coop?' · 🤝 co-op':''}</div>
         <div class="recur-schedule">${scheduleHtml}</div>
         <div class="recur-next-badge">${r.paused?'⏸ Paused':'⏭ '+nextStr}</div>
@@ -3290,13 +3407,45 @@ function payOut(who) {
   showNotif(`💰 Paid out ${name}! XP and rank preserved.`);
 }
 
-// ── Snipe: Commander claims a chore, awarding XP to the Dark Dragon ──────────
+function showBoardClearCelebration(heroName, bonus, dragonHit) {
+  const messages = [
+    `${heroName} has vanquished every quest! The realm rejoices!`,
+    `All tasks conquered! ${heroName} proves worthy of legend!`,
+    `${heroName} stands victorious — the board lies empty before them!`,
+    `Every quest cleared! The Dragon trembles at ${heroName}'s might!`,
+    `${heroName} has swept the board clean. Glory to the realm!`,
+  ];
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  document.getElementById('bcm-icon').textContent = heroName === 'Fox' ? '🦊' : '🌲';
+  document.getElementById('bcm-title').textContent = `${heroName.toUpperCase()} CLEARED THE BOARD!`;
+  document.getElementById('bcm-msg').textContent = msg;
+  document.getElementById('bcm-bonus').textContent = `+${bonus} XP BONUS EARNED`;
+  document.getElementById('board-clear-modal').classList.add('show');
+  // Auto-close after 8s
+  setTimeout(() => document.getElementById('board-clear-modal').classList.remove('show'), 8000);
+}
+
+// Dragon-day background: set when dragon gains XP, cleared next calendar day
+function applyDragonDayBackground() {
+  const dragonDay = S.dragon?.gainedDate;
+  const today = new Date().toDateString();
+  if (dragonDay === today) {
+    document.body.classList.add('dragon-day');
+  } else {
+    document.body.classList.remove('dragon-day');
+    // Clear the stored date if it's stale
+    if (dragonDay && dragonDay !== today && S.dragon) {
+      S.dragon.gainedDate = null;
+    }
+  }
+}
 function snipeChore(bountyId) {
   const b = S.bounties.find(x => x.id === bountyId); if (!b) return;
   if (!confirm(`🐉 SNIPE "${b.title}"?\n\nThe Dark Dragon claims this chore and gains ${b.pts} Dark XP.\nThe quest will be removed from the board.`)) return;
   // Award XP to dragon
   if (!S.dragon) S.dragon = { xp: 0 };
   S.dragon.xp = (S.dragon.xp || 0) + b.pts;
+  S.dragon.gainedDate = new Date().toDateString(); // trigger red lightning background
   // Remove bounty and any pending sub for it
   S.bounties = S.bounties.filter(x => x.id !== bountyId);
   S.subs     = S.subs.filter(s => s.bountyId !== bountyId);
@@ -3315,6 +3464,9 @@ function applyDragonOverride() {
   if (!S.dragon) S.dragon = { xp: 0 };
   const cur = S.dragon.xp || 0;
   S.dragon.xp = op === 'add' ? cur + val : op === 'sub' ? Math.max(0, cur - val) : val;
+  if (op === 'add' || (op === 'set' && val > cur)) {
+    S.dragon.gainedDate = new Date().toDateString();
+  }
   document.getElementById('ov-dragon-xp').value = '';
   save(); renderScores(); updateHome();
   showNotif('🐉 Dragon XP updated');
@@ -3504,6 +3656,7 @@ function updateDragonBar() {
     else if (pct >  0)  warn.textContent = '🐉 A shadow falls. The Dragon awakens...';
     else                warn.textContent = 'The realm is at peace... for now.';
   }
+  applyDragonDayBackground();
 }
 
 function openLevelModal(p) {
