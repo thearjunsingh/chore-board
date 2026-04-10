@@ -1826,7 +1826,7 @@ body::before {
 
 <div id="sync-indicator">⟳ Syncing...</div>
 <div class="notif" id="notif"></div>
-<div class="version-tag">v32</div>
+<div class="version-tag">v34</div>
 
 <script>
 // ============================================================
@@ -2029,7 +2029,10 @@ function normalizeState(s) {
   s.subs           = toArr(s.subs);
   s.bounties       = toArr(s.bounties);
   s.history        = toArr(s.history);
-  s.recurring      = toArr(s.recurring);
+  s.recurring      = toArr(s.recurring).map(r => ({
+    ...r,
+    days: Array.isArray(r.days) ? r.days : (r.days ? Object.values(r.days).map(Number) : [])
+  }));
   s.customTemplates= toArr(s.customTemplates);
   s.hiddenBuiltins = toArr(s.hiddenBuiltins);
   if (!s.pin) s.pin = '1234';
@@ -2953,6 +2956,7 @@ function renderRecurring() {
         <span class="recur-status ${r.paused?'paused':'active'}">${r.paused?'Paused':'Active'}</span>
         <div class="recur-btns">
           <button class="tog-b" onclick="openRecurEdit('${r.id}')">Edit</button>
+          <button class="tog-b" onclick="forcePostRecur('${r.id}')" title="Post now regardless of schedule">⚡ Post Now</button>
           <button class="tog-b ${r.paused?'':'on'}" onclick="toggleRecur('${r.id}')">${r.paused?'Resume':'Pause'}</button>
           <button class="del-b" onclick="delRecur('${r.id}')">Del</button>
         </div>
@@ -2999,6 +3003,42 @@ function toggleRecur(id) {
 function delRecur(id) {
   if(!confirm('Delete this recurring quest?'))return;
   S.recurring=S.recurring.filter(x=>x.id!==id); save(); renderRecurring();
+}
+
+function forcePostRecur(id) {
+  const r = (S.recurring||[]).find(x => x.id === id); if (!r) return;
+  const playerLabel = r.player === 'both' ? 'Both Heroes' : r.player === 'fox' ? 'Fox' : 'Forest';
+  if (!confirm(`Force post "${r.title}" for ${playerLabel} right now?\n\nThis will post it immediately regardless of schedule and reset its "posted today" flag.`)) return;
+
+  // Clear lastPosted so processRecurring won't skip it, then run it immediately
+  r.lastPosted = null;
+
+  const todayStr = new Date().toDateString();
+  const players = r.player === 'both' ? ['fox','forest'] : [r.player];
+  let posted = false;
+
+  players.forEach(p => {
+    // Remove any stale instance first
+    S.subs     = S.subs.filter(s => !(s.recurringId === r.id && s.player === p));
+    S.bounties = S.bounties.filter(b => !(b.recurringId === r.id && b.player === p));
+    S.bounties.push({
+      id: 'b'+Date.now()+'_'+p+'_r', player: p,
+      title: r.title, desc: r.desc, pts: r.pts, diff: r.diff, emoji: r.emoji,
+      active: true, recurringId: r.id,
+      deadline: r.deadline||null, firstClaim: r.firstClaim||false,
+      coop: r.coop||false, xpOnly: r.xpOnly||false,
+      postedAt: new Date().toISOString()
+    });
+    posted = true;
+  });
+
+  if (posted) {
+    r.lastPosted = todayStr;
+    save();
+    renderRecurring();
+    renderManage();
+    showNotif(`⚡ "${r.title}" posted to the board!`);
+  }
 }
 
 // Recurring form
